@@ -194,9 +194,9 @@ struct WallUserData : public UserData {
   unsigned gravityComponent_;
   RoughnessHeight z0_;
 
-  std::vector<double> offsetVector_{0.0, 0.0, 0.0};
+  std::vector<double> VeloffsetVector_{0.0, 0.0, 0.0};
+  std::vector<double> TempOffsetVector_{0.0, 0.0, 0.0};
   std::vector<std::string> ablTargetPartNames_;
-
   
   bool isAdiabatic_;
   bool heatFluxSpec_;
@@ -210,6 +210,7 @@ struct WallUserData : public UserData {
   bool wallFunctionApproach_;
   bool ablWallFunctionApproach_;
   bool lesSampleVelocityModel_{false};
+  bool lesSampleTemperatureModel_{false};
 
   bool isFsiInterface_;
 
@@ -225,7 +226,7 @@ struct WallUserData : public UserData {
       irradSpec_(false),
       wallFunctionApproach_(false),
       ablWallFunctionApproach_(false),
-      isFsiInterface_(false) {}    
+      isFsiInterface_(false) {}
 };
 
 struct InflowUserData : public UserData {

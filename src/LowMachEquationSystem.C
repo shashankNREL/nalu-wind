@@ -188,7 +188,6 @@
 
 #include <user_functions/OneTwoTenVelocityAuxFunction.h>
 #include <wind_energy/BdyLayerVelocitySampler.h>
-
 #include <user_functions/PerturbedShearLayerAuxFunctions.h>
 
 // deprecated
@@ -1901,6 +1900,7 @@ MomentumEquationSystem::register_wall_bc(
       if ( it_wf == solverAlgDriver_->solverAlgMap_.end() ) {
         SolverAlgorithm *theAlg = NULL;
         BdyLayerVelocitySampler* velocitySampler = nullptr;
+        BdyLayerTemperatureSampler* TemperatureSampler = nullptr;
 
         // Handle LES wall modeling approach
         if (userData.lesSampleVelocityModel_) {

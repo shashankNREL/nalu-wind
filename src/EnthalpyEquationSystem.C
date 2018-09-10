@@ -57,6 +57,7 @@
 #include <SolverAlgorithmDriver.h>
 #include <SolutionOptions.h>
 #include <wind_energy/ABLForcingAlgorithm.h>
+#include <wind_energy/BdyLayerTemperatureSampler.h>
 
 // template for kernels
 #include <AlgTraits.h>
@@ -798,8 +799,14 @@ EnthalpyEquationSystem::register_wall_bc(
 
   // check for wall function; warn user that this is not yet supported
   const bool wallFunctionApproach = userData.wallFunctionApproach_;
+  const bool ablWallFunctionApproach = userData.ablWallFunctionApproach_;
+  
   if (wallFunctionApproach)
     NaluEnv::self().naluOutputP0() << "Sorry, wall function not yet supported for energy; will use Dirichlet" << std::endl;
+
+  if (ablWallFunctionApproach){
+    NaluEnv::self().naluOutputP0() << "ABL wall function: Will use the temperature sampling at a height" << std::endl;
+  }
 
   // check that is was specified (okay if it is not)
   if ( bc_data_specified(userData, temperatureName) ) {

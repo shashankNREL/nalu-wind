@@ -96,7 +96,7 @@ BdyLayerTemperatureSampler::determine_node_elem_mapping()
   bulk.modification_begin();
   {
     if (samplerElemGhosting_ == nullptr) {
-      std::string ghostingName = "nalu_abl_les_model_ghosting";
+      std::string ghostingName = "nalu_abl_les_Temperature_model_ghosting";
       samplerElemGhosting_ = &(bulk.create_ghosting(ghostingName));
     }
     else {
@@ -292,7 +292,7 @@ BdyLayerTemperatureSampler::finalize_search(
       curDist = tgtInfo->minDistance_;
     }
 
-    // Get the coordinates of the point where the velocity is to be sampled.
+    // Get the coordinates of the point where the Temperature is to be sampled.
     const double* nodeCrd = stk::mesh::field_data(*coords, node);
     for (int d=0; d < nDim; d++) {
       nodalCoords[d] = nodeCrd[d] + TempOffsetVector_[d];

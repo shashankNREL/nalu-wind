@@ -28,7 +28,7 @@ BdyLayerVelocitySampler::BdyLayerVelocitySampler(
   WallUserData& wallUserData
 ) : AlgorithmDriver(realm),
     searchPartNames_(wallUserData.ablTargetPartNames_),
-    offsetVector_(wallUserData.offsetVector_)
+    offsetVector_(wallUserData.VeloffsetVector_)
 {
   if (offsetVector_.size() != realm_.meta_data().spatial_dimension())
     throw std::runtime_error(
