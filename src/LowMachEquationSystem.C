@@ -1900,8 +1900,7 @@ MomentumEquationSystem::register_wall_bc(
       if ( it_wf == solverAlgDriver_->solverAlgMap_.end() ) {
         SolverAlgorithm *theAlg = NULL;
         BdyLayerVelocitySampler* velocitySampler = nullptr;
-        BdyLayerTemperatureSampler* TemperatureSampler = nullptr;
-
+        
         // Handle LES wall modeling approach
         if (userData.lesSampleVelocityModel_) {
           velocitySampler = new BdyLayerVelocitySampler(realm_, userData);

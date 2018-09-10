@@ -809,7 +809,42 @@ EnthalpyEquationSystem::register_wall_bc(
   }
 
   // check that is was specified (okay if it is not)
-  if ( bc_data_specified(userData, temperatureName) ) {
+  if(ablWallFunctionApproach){
+    std::map<AlgorithmType, SolverAlgorithm *>::iterator it_wf =
+        solverAlgDriver_->solverAlgMap_.find(wfAlgType);
+      if ( it_wf == solverAlgDriver_->solverAlgMap_.end() ) {
+        SolverAlgorithm *theAlg = NULL;
+        BdyLayerTemperatureSampler* TemperatureSampler = nullptr;
+
+        // Handle LES wall modeling approach
+        if (userData.lesSampleTemperatureModel_) {
+          TemperatureSampler = new BdyLayerVelocitySampler(realm_, userData);
+          equationSystems_.preIterAlgDriver_.push_back(TemperatureSampler);
+
+          NaluEnv::self().naluOutputP0()
+            << "EnthalpyEQS:: Activated Temperature sampling from user-defined height for LES Wall model" << std::endl;
+        }
+
+        // TODO: We need to add the algorithms for edge & element for heat flux LES model
+        if (realm_.realmUsesEdges_) {
+          // theAlg = new AssembleMomentumEdgeABLWallFunctionSolverAlgorithm(
+          //   realm_, part, this, grav, z0, referenceTemperature, velocitySampler);
+        } else {
+          // theAlg = new AssembleMomentumElemABLWallFunctionSolverAlgorithm(
+          //   realm_, part, this, realm_.realmUsesEdges_, grav, z0,
+          //   referenceTemperature);
+        }
+
+        if (userData.lesSampleTemperatureModel_) {
+          TemperatureSampler->set_wall_func_algorithm(theAlg);
+        }
+
+        solverAlgDriver_->solverAlgMap_[wfAlgType] = theAlg;
+      }
+      else {
+        it_wf->second->partVec_.push_back(part);
+      }
+  } else if ( bc_data_specified(userData, temperatureName) ) {
 
     // bc data work (copy, enthalpy evaluation, etc.)
     ScalarFieldType *temperatureBc = &(meta_data.declare_field<ScalarFieldType>(stk::topology::NODE_RANK, "temperature_bc"));

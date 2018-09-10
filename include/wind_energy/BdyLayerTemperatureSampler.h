@@ -67,7 +67,7 @@ public:
   BdyLayerTemperatureSampler(
       Realm&,
       WallUserData&);
-  
+
   virtual ~BdyLayerTemperatureSampler();
 
   virtual void pre_work();
