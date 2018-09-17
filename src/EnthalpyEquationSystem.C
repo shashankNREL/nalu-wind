@@ -821,7 +821,7 @@ EnthalpyEquationSystem::register_wall_bc(
 
         // Handle LES wall modeling approach
         if (userData.lesSampleTemperatureModel_) {
-          TemperatureSampler = new BdyLayerVelocitySampler(realm_, userData);
+          TemperatureSampler = new BdyLayerTemperatureSampler(realm_, userData);
           equationSystems_.preIterAlgDriver_.push_back(TemperatureSampler);
 
           NaluEnv::self().naluOutputP0()
