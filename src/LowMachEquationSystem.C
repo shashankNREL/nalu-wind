@@ -1882,7 +1882,7 @@ MomentumEquationSystem::register_wall_bc(
             throw std::runtime_error("MomentumEQS:: LES Sampling at different height requires boundary_layer_statistics turned on.");
           double refHeight = 0.0;
           for (int d=0; d < nDim; d++) {
-            refHeight += userData.offsetVector_[d] * userData.offsetVector_[d];
+            refHeight += userData.VeloffsetVector_[d] * userData.VeloffsetVector_[d];
           }
           refHeight = std::sqrt(refHeight);
           theUtauAlg->useLESSamplingHeight_ = true;

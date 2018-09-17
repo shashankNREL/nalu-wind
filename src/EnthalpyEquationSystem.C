@@ -810,6 +810,9 @@ EnthalpyEquationSystem::register_wall_bc(
 
   // check that is was specified (okay if it is not)
   if(ablWallFunctionApproach){
+
+    const AlgorithmType wfAlgType = WALL_ABL;
+    
     std::map<AlgorithmType, SolverAlgorithm *>::iterator it_wf =
         solverAlgDriver_->solverAlgMap_.find(wfAlgType);
       if ( it_wf == solverAlgDriver_->solverAlgMap_.end() ) {
