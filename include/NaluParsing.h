@@ -197,6 +197,7 @@ struct WallUserData : public UserData {
   
   bool isAdiabatic_;
   bool heatFluxSpec_;
+  bool heatFluxSkinTempTableSpec_;
   bool isInterface_;
   bool refTempSpec_;
   bool htcSpec_;
@@ -214,6 +215,7 @@ struct WallUserData : public UserData {
       gravityComponent_(3),
       isAdiabatic_(false),
       heatFluxSpec_(false),
+      heatFluxSkinTempTableSpec_(false),
       isInterface_(false),
       refTempSpec_(false),
       htcSpec_(false),

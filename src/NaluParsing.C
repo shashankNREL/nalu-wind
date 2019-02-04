@@ -911,6 +911,12 @@ namespace YAML
       wallData.heatFluxSpec_ = true;
     }
 
+    if (node["heat_flux_skin_temp_table"])
+    {
+      wallData.heatFluxSkinTempTableSpec_ = true;
+    }
+   
+
     // function data
     const bool optional = true;
     const Node userFcnNode = sierra::nalu::expect_map(node,
