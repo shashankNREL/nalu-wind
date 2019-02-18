@@ -911,9 +911,10 @@ namespace YAML
       wallData.heatFluxSpec_ = true;
     }
 
-    if (node["heat_flux_skin_temp_table"])
+    if (node["heat_flux_ABL"])
     {
-      wallData.heatFluxSkinTempTableSpec_ = true;
+      wallData.heatFluxABLNode_ = node["heat_flux_ABL"];
+      wallData.heatFluxABLSpec_ = true;
     }
    
 

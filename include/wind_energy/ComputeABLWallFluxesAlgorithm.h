@@ -9,13 +9,16 @@
 #ifndef ComputeABLWallFluxesAlgorithm_h
 #define ComputeABLWallFluxesAlgorithm_h
 
-#include <Algorithm.h>
-#include <NaluParsing.h>
-#include <FieldTypeDef.h>
-#include <ABLProfileFunction.h>
+#include "Algorithm.h"
+#include "NaluParsing.h"
+#include "FieldTypeDef.h"
+#include "ABLProfileFunction.h"
 
 // stk
-#include <stk_mesh/base/Part.hpp>
+#include "stk_mesh/base/Part.hpp"
+
+#include <vector>
+#include <iostream>
 
 namespace sierra{
 namespace nalu{
@@ -25,6 +28,9 @@ class Realm;
 class ComputeABLWallFluxesAlgorithm : public Algorithm
 {
 public:
+  template <typename T>
+  using ListArray = std::vector<std::vector<T>>;
+
   // Constructor
   ComputeABLWallFluxesAlgorithm(
     Realm &realm,

@@ -197,7 +197,7 @@ struct WallUserData : public UserData {
   
   bool isAdiabatic_;
   bool heatFluxSpec_;
-  bool heatFluxSkinTempTableSpec_;
+  bool heatFluxABLSpec_;
   bool isInterface_;
   bool refTempSpec_;
   bool htcSpec_;
@@ -210,12 +210,14 @@ struct WallUserData : public UserData {
 
   bool isFsiInterface_;
 
+  const YAML::Node heatFluxABLNode_;
+
   WallUserData()
     : UserData(),
       gravityComponent_(3),
       isAdiabatic_(false),
       heatFluxSpec_(false),
-      heatFluxSkinTempTableSpec_(false),
+      heatFluxABLSpec_(false),
       isInterface_(false),
       refTempSpec_(false),
       htcSpec_(false),
@@ -223,7 +225,8 @@ struct WallUserData : public UserData {
       irradSpec_(false),
       wallFunctionApproach_(false),
       ablWallFunctionApproach_(false),
-      isFsiInterface_(false) {}    
+      isFsiInterface_(false),
+      heatFluxABLNode_(NULL) {}    
 };
 
 struct InflowUserData : public UserData {

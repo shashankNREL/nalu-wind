@@ -7,26 +7,26 @@
 
 
 // nalu
-#include <wind_energy/ComputeABLWallFluxesAlgorithm.h>
-#include <Algorithm.h>
+#include "wind_energy/ComputeABLWallFluxesAlgorithm.h"
+#include "Algorithm.h"
 
-#include <FieldTypeDef.h>
-#include <Realm.h>
-#include <master_element/MasterElement.h>
-#include <NaluEnv.h>
+#include "FieldTypeDef.h"
+#include "Realm.h"
+#include "master_element/MasterElement.h"
+#include "NaluEnv.h"
 
-#include <ABLProfileFunction.h>
-#include <wind_energy/BdyLayerStatistics.h>
+#include "ABLProfileFunction.h"
+#include "wind_energy/BdyLayerStatistics.h"
 
 // stk_mesh/base/fem/util
-#include <stk_mesh/base/BulkData.hpp>
-#include <stk_mesh/base/Field.hpp>
-#include <stk_mesh/base/FieldParallel.hpp>
-#include <stk_mesh/base/GetBuckets.hpp>
-#include <stk_mesh/base/GetEntities.hpp>
-#include <stk_mesh/base/MetaData.hpp>
-#include <stk_mesh/base/Part.hpp>
-#include <stk_util/parallel/ParallelReduce.hpp>
+#include "stk_mesh/base/BulkData.hpp"
+#include "stk_mesh/base/Field.hpp"
+#include "stk_mesh/base/FieldParallel.hpp"
+#include "stk_mesh/base/GetBuckets.hpp"
+#include "stk_mesh/base/GetEntities.hpp"
+#include "stk_mesh/base/MetaData.hpp"
+#include "stk_mesh/base/Part.hpp"
+#include "stk_util/parallel/ParallelReduce.hpp"
 
 // basic c++
 #include <cmath>
@@ -91,8 +91,13 @@ ComputeABLWallFluxesAlgorithm::~ComputeABLWallFluxesAlgorithm()
 //--------------------------------------------------------------------------
 //-------- load ------------------------------------------------------------
 //--------------------------------------------------------------------------
-ComputeABLWallFluxesAlgorithm::load(cost YAML::Node& node)
+void
+ComputeABLWallFluxesAlgorithm::load(const YAML::Node& node)
 {
+  ListArray<double> tableData;
+  get_required<ListArray<double>>(node,"surface_heating_table",tableData);
+  std::cout << tableData[0][0] << std::endl;
+   
 }
 
 //--------------------------------------------------------------------------

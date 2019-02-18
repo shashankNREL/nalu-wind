@@ -103,9 +103,12 @@
 #include <TurbViscSmagorinskyAlgorithm.h>
 #include <TurbViscSSTAlgorithm.h>
 #include <TurbViscWaleAlgorithm.h>
-#include <wind_energy/ABLForcingAlgorithm.h>
 #include <FixPressureAtNodeAlgorithm.h>
 #include <FixPressureAtNodeInfo.h>
+
+// wind energy
+#include <wind_energy/ABLForcingAlgorithm.h>
+#include <wind_energy/ComputeABLWallFluxesAlgorithm.h>
 
 // template for kernels
 #include <AlgTraits.h>
@@ -1925,8 +1928,10 @@ MomentumEquationSystem::register_wall_bc(
       std::map<AlgorithmType, Algorithm *>::iterator it_utau =
         wallFunctionParamsAlgDriver_->algMap_.find(wfAlgType);
       if ( it_utau == wallFunctionParamsAlgDriver_->algMap_.end() ) {
-        ComputeABLWallFrictionVelocityAlgorithm *theUtauAlg =
-          new ComputeABLWallFrictionVelocityAlgorithm(realm_, part, realm_.realmUsesEdges_, grav, z0, referenceTemperature);
+      //ComputeABLWallFrictionVelocityAlgorithm *theUtauAlg =
+      //  new ComputeABLWallFrictionVelocityAlgorithm(realm_, part, realm_.realmUsesEdges_, grav, z0, referenceTemperature);
+        ComputeABLWallFluxesAlgorithm *theUtauAlg =
+          new ComputeABLWallFluxesAlgorithm(realm_, userData.heatFluxABLNode_, part, realm_.realmUsesEdges_, grav, z0, referenceTemperature);
         wallFunctionParamsAlgDriver_->algMap_[wfAlgType] = theUtauAlg;
       }
       else {
