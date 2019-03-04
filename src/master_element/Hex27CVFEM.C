@@ -28,7 +28,7 @@ namespace nalu{
 HexahedralP2Element::HexahedralP2Element()
   : MasterElement()
 {
-  nDim_ = 3;
+  ndim(AlgTraits::nDim_);
   nodesPerElement_ = nodes1D_ * nodes1D_ * nodes1D_;
 }
 
@@ -154,7 +154,7 @@ double HexahedralP2Element::isInElement(
 int
 HexahedralP2Element::tensor_product_node_map(int i, int j, int k) const
 {
-   return stkNodeMap_[i + nodes1D_ * (j + nodes1D_ * k)];
+   return stkNodeMap_[k][j][i];
 }
 
 //--------------------------------------------------------------------------
@@ -289,9 +289,11 @@ HexahedralP2Element::eval_shape_derivs_at_shifted_ips()
 void
 HexahedralP2Element::eval_shape_derivs_at_face_ips()
 {
-  expFaceShapeDerivs_.resize(numIntPoints_*nodesPerElement_*nDim_);
+  const int numFaceIntPoints = intgExpFace_.size() / 3; // 216, same as numIntPoints_
+  ThrowAssert(intgExpFace_.size() % 3 == 0);
+  expFaceShapeDerivs_.resize(numFaceIntPoints*nodesPerElement_*nDim_);
   hex27_shape_deriv(
-    numIntPoints_,
+    numFaceIntPoints,
     intgExpFace_.data(),
     expFaceShapeDerivs_.data()
   );
@@ -1255,7 +1257,7 @@ Hex27SCS::side_node_ordinals(
   int ordinal)
 {
   // define face_ordinal->node_ordinal mappings for each face (ordinal);
-  return &sideNodeOrdinals_[ordinal*9];
+  return sideNodeOrdinals_[ordinal];
 }
 
 //--------------------------------------------------------------------------
