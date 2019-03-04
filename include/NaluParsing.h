@@ -210,7 +210,7 @@ struct WallUserData : public UserData {
 
   bool isFsiInterface_;
 
-  const YAML::Node heatFluxABLNode_;
+  YAML::Node heatFluxABLNode_;
 
   WallUserData()
     : UserData(),

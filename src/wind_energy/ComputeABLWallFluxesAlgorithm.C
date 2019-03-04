@@ -17,6 +17,7 @@
 
 #include "ABLProfileFunction.h"
 #include "wind_energy/BdyLayerStatistics.h"
+#include "utils/LinearInterpolation.h"
 
 // stk_mesh/base/fem/util
 #include "stk_mesh/base/BulkData.hpp"
@@ -62,11 +63,16 @@ ComputeABLWallFluxesAlgorithm::ComputeABLWallFluxesAlgorithm(
     gamma_h_(5.0), 
     kappa_(realm.get_turb_model_constant(TM_kappa)),
     maxIteration_(40),
-    tolerance_(1.0e-7)
+    tolerance_(1.0e-7),
+    tableTimes_(0.0),
+    tableFluxes_(0.0),
+    tableSurfaceTemperatures_(0.0),
+    tableWeights_(0.0)
 {
   // save off fields
   stk::mesh::MetaData & meta_data = realm_.meta_data();
   velocity_ = meta_data.get_field<VectorFieldType>(stk::topology::NODE_RANK, "velocity");
+  temperature_ = meta_data.get_field<ScalarFieldType>(stk::topology::NODE_RANK, "temperature");
   bcVelocity_ = meta_data.get_field<VectorFieldType>(stk::topology::NODE_RANK, "wall_velocity_bc");
   bcHeatFlux_ = meta_data.get_field<ScalarFieldType>(stk::topology::NODE_RANK, "heat_flux_bc");
   coordinates_ = meta_data.get_field<VectorFieldType>(stk::topology::NODE_RANK, realm_.get_coordinates_name());
@@ -78,6 +84,8 @@ ComputeABLWallFluxesAlgorithm::ComputeABLWallFluxesAlgorithm(
   wallNormalDistanceBip_ = meta_data.get_field<GenericFieldType>(meta_data.side_rank(), "wall_normal_distance_bip");
   assembledWallArea_ = meta_data.get_field<ScalarFieldType>(stk::topology::NODE_RANK, "assembled_wall_area_wf");
   assembledWallNormalDistance_ = meta_data.get_field<ScalarFieldType>(stk::topology::NODE_RANK, "assembled_wall_normal_distance");
+  
+  load(node);
 }
 
 //--------------------------------------------------------------------------
@@ -94,10 +102,30 @@ ComputeABLWallFluxesAlgorithm::~ComputeABLWallFluxesAlgorithm()
 void
 ComputeABLWallFluxesAlgorithm::load(const YAML::Node& node)
 {
+  // Read in the table of surface heat flux or surface temperature versus time.
+  std::cout << "Loading Surface Heating Table..." << std::endl;
+ 
   ListArray<double> tableData;
   get_required<ListArray<double>>(node,"surface_heating_table",tableData);
-  std::cout << tableData[0][0] << std::endl;
-   
+ 
+  std::cout << tableData[0][0] << " " << tableData[0][1] << " " << tableData[0][2] << " " << tableData[0][3] << std::endl;  
+  std::cout << tableData[1][0] << " " << tableData[1][1] << " " << tableData[1][2] << " " << tableData[1][3] << std::endl;  
+ 
+  // Split the table out into vectors for each input quantity.
+  auto nTimes = tableData.size();
+  std::cout << "nTimes = " << nTimes << std::endl;
+
+  tableTimes_.resize(nTimes);
+  tableFluxes_.resize(nTimes);
+  tableSurfaceTemperatures_.resize(nTimes);
+  tableWeights_.resize(nTimes);
+
+  for (std::vector<double>::size_type i = 0; i < nTimes; i++) {
+    tableTimes_[i] = tableData[i][0]; 
+    tableFluxes_[i] = tableData[i][1]; 
+    tableSurfaceTemperatures_[i] = tableData[i][2]; 
+    tableWeights_[i] = tableData[i][3]; 
+  }
 }
 
 //--------------------------------------------------------------------------
@@ -106,6 +134,20 @@ ComputeABLWallFluxesAlgorithm::load(const YAML::Node& node)
 void
 ComputeABLWallFluxesAlgorithm::execute()
 {
+  // Get the current time and interpolate flux/surface temperature in time.
+  const double currTime = realm_.get_current_time();
+  
+  double currFlux;
+  double currSurfaceTemperature;
+  double currWeight;
+  utils::linear_interp(tableTimes_, tableFluxes_, currTime, currFlux);
+  utils::linear_interp(tableTimes_, tableSurfaceTemperatures_, currTime, currSurfaceTemperature);
+  utils::linear_interp(tableTimes_, tableWeights_, currTime, currWeight);
+
+  std::cout << "Flux = " << currFlux << std::endl;
+  std::cout << "Surface Temperature = " << currSurfaceTemperature << std::endl;
+  std::cout << "Weight = " << currWeight << std::endl;
+
 
   stk::mesh::BulkData & bulk_data = realm_.bulk_data();
   stk::mesh::MetaData & meta_data = realm_.meta_data();
@@ -138,6 +180,7 @@ ComputeABLWallFluxesAlgorithm::execute()
   // nodal fields to gather
   std::vector<double> ws_velocityNp1;
   std::vector<double> ws_bcVelocity;
+  std::vector<double> ws_temperatureNp1;
   std::vector<double> ws_bcHeatFlux;
   std::vector<double> ws_density;
   std::vector<double> ws_specificHeat;
@@ -148,6 +191,7 @@ ComputeABLWallFluxesAlgorithm::execute()
 
   // deal with state
   VectorFieldType &velocityNp1 = velocity_->field_of_state(stk::mesh::StateNP1);
+  ScalarFieldType &temperatureNp1 = temperature_->field_of_state(stk::mesh::StateNP1);
   ScalarFieldType &densityNp1 = density_->field_of_state(stk::mesh::StateNP1);
 
   // define vector of parent topos; should always be UNITY in size
@@ -182,6 +226,7 @@ ComputeABLWallFluxesAlgorithm::execute()
     // algorithm related; element
     ws_velocityNp1.resize(nodesPerFace*nDim);
     ws_bcVelocity.resize(nodesPerFace*nDim);
+    ws_temperatureNp1.resize(nodesPerFace);
     ws_bcHeatFlux.resize(nodesPerFace);
     ws_density.resize(nodesPerFace);
     ws_specificHeat.resize(nodesPerFace);
@@ -190,6 +235,7 @@ ComputeABLWallFluxesAlgorithm::execute()
     // pointers
     double *p_velocityNp1 = &ws_velocityNp1[0];
     double *p_bcVelocity = &ws_bcVelocity[0];
+    double *p_temperatureNp1 = &ws_temperatureNp1[0];
     double *p_bcHeatFlux = &ws_bcHeatFlux[0];
     double *p_density = &ws_density[0];
     double *p_specificHeat = &ws_specificHeat[0];
@@ -213,6 +259,7 @@ ComputeABLWallFluxesAlgorithm::execute()
       //======================================
       stk::mesh::Entity const * face_node_rels = bulk_data.begin_nodes(face);
       int num_face_nodes = bulk_data.num_nodes(face);
+      std::cout << "num_face
       // sanity check on num nodes
       ThrowAssert( num_face_nodes == nodesPerFace );
 
@@ -220,6 +267,7 @@ ComputeABLWallFluxesAlgorithm::execute()
         stk::mesh::Entity node = face_node_rels[ni];
 
 	// gather scalars
+        p_temperatureNp1[ni] = *stk::mesh::field_data(temperatureNp1, node);
 	p_bcHeatFlux[ni] = *stk::mesh::field_data(*bcHeatFlux_, node);
 	p_density[ni]    = *stk::mesh::field_data(densityNp1, node);
 	p_specificHeat[ni] = *stk::mesh::field_data(*specificHeat_, node);
@@ -251,7 +299,10 @@ ComputeABLWallFluxesAlgorithm::execute()
       stk::mesh::Entity const * elem_node_rels = bulk_data.begin_nodes(element);
 
       // loop over face nodes
+      std::cout << "numScsBip = " << numScsBip << std::endl;
       for ( int ip = 0; ip < numScsBip; ++ip ) {
+
+        std::cout << "ip = " << ip << std::endl;
 
         const int offSetAveraVec = ip*nDim;
 
@@ -277,12 +328,15 @@ ComputeABLWallFluxesAlgorithm::execute()
         aMag = std::sqrt(aMag);
 
         // interpolate to bip
+        double temperatureBip = 0.0;
 	double heatFluxBip = 0.0;
 	double rhoBip = 0.0;
 	double CpBip = 0.0;
         const int offSetSF_face = ip*nodesPerFace;
+        std::cout << "nodesPerFace = " << nodesPerFace << std::endl;
         for ( int ic = 0; ic < nodesPerFace; ++ic ) {
           const double r = p_face_shape_function[offSetSF_face+ic];
+          temperatureBip += r*p_temperatureNp1[ic];
 	  heatFluxBip += r*p_bcHeatFlux[ic];
 	  rhoBip += r*p_density[ic];
 	  CpBip += r*p_specificHeat[ic];
@@ -323,10 +377,14 @@ ComputeABLWallFluxesAlgorithm::execute()
         *assembledWallNormalDistance += aMag*ypBip;
 
         // determine tangential velocity
+        double uiTan = 0.0;
+        double uiBcTan = 0.0;
         double uTangential = 0.0;
         for ( int i = 0; i < nDim; ++i ) {
-          double uiTan = 0.0;
-          double uiBcTan = 0.0;
+          uiTan = 0.0;
+          uiBcTan = 0.0;
+        //double uiTan = 0.0;
+        //double uiBcTan = 0.0;
           for ( int j = 0; j < nDim; ++j ) {
             const double ninj = p_unitNormal[i]*p_unitNormal[j];
             if ( i==j ) {
@@ -339,12 +397,24 @@ ComputeABLWallFluxesAlgorithm::execute()
               uiBcTan -= ninj*p_uBcBip[j];
             }
           }
+          std::cout << "   i = " << i << std::endl;
+          std::cout << "      uiTan = " << uiTan << std::endl;
+          std::cout << "      uiBcTan = " << uiBcTan << std::endl;
           uTangential += (uiTan-uiBcTan)*(uiTan-uiBcTan);
         }
         uTangential = std::sqrt(uTangential);
 
-	const double TfluxBip = heatFluxBip / (rhoBip * CpBip);
+        std::cout << "   uTangential = " << uTangential << std::endl;
+        std::cout << "   temperatureBip = " << temperatureBip << std::endl;
+        std::cout << "   heatFluxBip = " << heatFluxBip << std::endl;
+        std::cout << "   rhoBip = " << rhoBip << std::endl;
+        std::cout << "   CpBip = " << CpBip << std::endl;
+    
+
+	double TfluxBip = heatFluxBip / (rhoBip * CpBip);
         compute_utau(uTangential, ypBip, TfluxBip, p_ABLProfFun, wallFrictionVelocityBip[ip]);
+        double tol = 1.0E-3;
+        compute_fluxes_given_surface_temperature(tol, uTangential, temperatureBip, currSurfaceTemperature, ypBip, p_ABLProfFun, wallFrictionVelocityBip[ip], TfluxBip);
         uTauAreaSumLocal[0] += wallFrictionVelocityBip[ip] * aMag ;
         uTauAreaSumLocal[1] += aMag ;
       }
@@ -390,6 +460,83 @@ ComputeABLWallFluxesAlgorithm::zero_nodal_fields()
       assembledWallNormalDistance[k] = 0.0;
     }
   }
+}
+
+
+//--------------------------------------------------------------------------
+//-------- compute_fluxes_given_surface_temperature ------------------------
+//--------------------------------------------------------------------------
+void 
+ComputeABLWallFluxesAlgorithm::compute_fluxes_given_surface_temperature(
+    const double tol, const double &up, const double &Tp, const double Tsurface, const double &zp, const ABLProfileFunction *ABLProfFun, double &utau, double &qsurf)
+{
+  // This is algorithm 2 outlined by Basu et al.
+  // Set Psi_H and Psi_M initially to zero.
+  double Psi_H = 0.0;
+  double Psi_M = 0.0;
+
+  // Enter the iterative solver loop and iterate until convergence
+  double frictionVelocity = 0.0;
+  double temperatureFlux = 0.0;
+  double frictionVelocityOld = 1.0E10;
+  double temperatureFluxOld = 1.0E10;
+  double L = 1.0E10;
+  double frictionVelocityDelta = std::abs(frictionVelocity - frictionVelocityOld);
+  double temperatureFluxDelta = std::abs(temperatureFlux - temperatureFluxOld);
+  int iterMax = 1000;
+  int iter = 0;
+  while (((frictionVelocityDelta > tol ) || (temperatureFluxDelta > tol)) && (iter < iterMax))
+  {
+    // Update the old values.
+    frictionVelocityOld = frictionVelocity;
+    temperatureFluxOld = temperatureFlux;
+
+    // Compute friction velocity using Monin-Obukhov similarity.
+    frictionVelocity = (kappa_ * up) / (std::log(zp / z0_) - Psi_M);
+
+    // Compute heat flux using Monin-Obukhov similarity.
+    double deltaT = Tp - Tsurface;
+    temperatureFlux = -(deltaT * frictionVelocity * kappa_) / (std::log(zp / z0_) - Psi_H);
+
+    // Compute Obukhov length.
+    if (temperatureFlux == 0.0)
+    {
+      L = 1.0E10;
+    }
+    else
+    {
+      L = -(Tref_ * std::pow(frictionVelocity,3))/(kappa_ * gravity_ * temperatureFlux);
+    }
+
+    // Recompute Psi_H and Psi_M.
+    Psi_H = ABLProfFun->temperature(zp/L);
+    Psi_M = ABLProfFun->velocity(zp/L);
+
+    // Compute changes in solution.
+    frictionVelocityDelta = std::abs(frictionVelocity - frictionVelocityOld);
+    temperatureFluxDelta = std::abs(temperatureFlux - temperatureFluxOld);
+
+    // Add to the iteration count.
+    iter++;
+    
+    std::cout << "     - iteration: " << iter << std::endl;
+    std::cout << "     - friction velocity = " << frictionVelocity << " " << frictionVelocityDelta << std::endl;
+    std::cout << "     - temperature flux = " << temperatureFlux << " " << temperatureFluxDelta << std::endl;
+    std::cout << "     - L = " << L << std::endl;
+    std::cout << "     - Psi_M = " << Psi_M << std::endl;
+    std::cout << "     - Psi_H = " << Psi_H << std::endl;
+  }
+}
+
+
+//--------------------------------------------------------------------------
+//-------- compute_fluxes_given_surface_heat_flux -------------------------
+//--------------------------------------------------------------------------
+void 
+ComputeABLWallFluxesAlgorithm::compute_fluxes_given_surface_heating(
+)
+{
+  // Do nothing.
 }
 
 //--------------------------------------------------------------------------

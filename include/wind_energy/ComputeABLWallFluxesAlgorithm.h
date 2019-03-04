@@ -56,8 +56,15 @@ public:
       const double &qsurf, const ABLProfileFunction *ABLProfFun,
       double &utau);
 
-  //! Compute the heat flux
-  void compute_heat_flux();
+  //! Compute the surface fluxes.
+  void compute_fluxes_given_surface_temperature(
+      const double tol,
+      const double &up, const double &Tp,
+      const double Tsurface,
+      const double &zp,
+      const ABLProfileFunction *ABLProfFun,
+      double &utau, double &qsurf);
+  void compute_fluxes_given_surface_heating();
   
   void normalize_nodal_fields();
 
@@ -75,6 +82,7 @@ public:
   const double tolerance_;
 
   VectorFieldType *velocity_;
+  ScalarFieldType *temperature_;
   VectorFieldType *bcVelocity_;
   ScalarFieldType *bcHeatFlux_;
   ScalarFieldType *density_;
@@ -85,6 +93,14 @@ public:
   GenericFieldType *wallNormalDistanceBip_;
   ScalarFieldType *assembledWallNormalDistance_;
   ScalarFieldType *assembledWallArea_;
+
+private:
+  // Break the flux/surface temperature vs. time input table into vectors
+  // of each quantity and store in the following vectors.
+  std::vector<double> tableTimes_;
+  std::vector<double> tableFluxes_;
+  std::vector<double> tableSurfaceTemperatures_;
+  std::vector<double> tableWeights_;
 };
 
 } // namespace nalu

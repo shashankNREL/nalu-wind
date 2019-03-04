@@ -907,13 +907,15 @@ namespace YAML
 
     if (node["heat_flux"])
     {
+      std::cout << "Using standard heat flux BC..." << std::endl;
       wallData.q_ = node["heat_flux"].as<sierra::nalu::NormalHeatFlux>();
       wallData.heatFluxSpec_ = true;
     }
 
-    if (node["heat_flux_ABL"])
+    if (node["heat_flux_abl"])
     {
-      wallData.heatFluxABLNode_ = node["heat_flux_ABL"];
+      std::cout << "Using new ABL heat flux BC..." << std::endl;
+      wallData.heatFluxABLNode_ = node["heat_flux_abl"];
       wallData.heatFluxABLSpec_ = true;
     }
    
