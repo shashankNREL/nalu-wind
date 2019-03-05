@@ -44,6 +44,7 @@ public:
   /** Execute the kernel within a Kokkos loop and populate the LHS and RHS for
    *  the linear solve
    */
+  using Kernel::execute;
   virtual void execute(
     SharedMemView<DoubleType**>&,
     SharedMemView<DoubleType*>&,
@@ -53,11 +54,12 @@ private:
   ContinuityAdvElemKernel() = delete;
 
   // extract fields; nodal
-  VectorFieldType *velocityRTM_{nullptr};
-  VectorFieldType *Gpdx_{nullptr};
-  ScalarFieldType *pressure_{nullptr};
-  ScalarFieldType *densityNp1_{nullptr};
-  VectorFieldType *coordinates_{nullptr};
+  unsigned velocityRTM_ {stk::mesh::InvalidOrdinal};
+  unsigned Gpdx_ {stk::mesh::InvalidOrdinal};
+  unsigned pressure_ {stk::mesh::InvalidOrdinal};
+  unsigned densityNp1_ {stk::mesh::InvalidOrdinal};
+  unsigned coordinates_ {stk::mesh::InvalidOrdinal};
+  unsigned Udiag_ {stk::mesh::InvalidOrdinal};
 
   double projTimeScale_{1.0};
 

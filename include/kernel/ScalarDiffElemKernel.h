@@ -41,6 +41,7 @@ public:
   /** Execute the kernel within a Kokkos loop and populate the LHS and RHS for
    *  the linear solve
    */
+  using Kernel::execute;
   virtual void execute(
     SharedMemView<DoubleType**>&,
     SharedMemView<DoubleType*>&,
@@ -49,9 +50,9 @@ public:
 private:
   ScalarDiffElemKernel() = delete;
 
-  ScalarFieldType *scalarQ_{nullptr};
-  ScalarFieldType *diffFluxCoeff_{nullptr};
-  VectorFieldType *coordinates_{nullptr};
+  unsigned scalarQ_ {stk::mesh::InvalidOrdinal};
+  unsigned diffFluxCoeff_ {stk::mesh::InvalidOrdinal};
+  unsigned coordinates_ {stk::mesh::InvalidOrdinal};
 
   /// Left right node indicators
   const int* lrscv_;

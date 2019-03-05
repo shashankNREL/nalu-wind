@@ -43,6 +43,7 @@ public:
   /** Execute the kernel within a Kokkos loop and populate the LHS and RHS for
    *  the linear solve
    */
+  using Kernel::execute;
   virtual void execute(
     SharedMemView<DoubleType**> &lhs,
     SharedMemView<DoubleType*> &rhs,
@@ -53,11 +54,11 @@ public:
 private:
   ScalarFluxPenaltyElemKernel() = delete;
 
-  ScalarFieldType *scalarQ_{nullptr};
-  ScalarFieldType *bcScalarQ_{nullptr};
-  ScalarFieldType *diffFluxCoeff_{nullptr};
-  VectorFieldType *coordinates_{nullptr};
-  GenericFieldType *exposedAreaVec_{nullptr};
+  unsigned scalarQ_ {stk::mesh::InvalidOrdinal};
+  unsigned bcScalarQ_ {stk::mesh::InvalidOrdinal};
+  unsigned diffFluxCoeff_ {stk::mesh::InvalidOrdinal};
+  unsigned coordinates_ {stk::mesh::InvalidOrdinal};
+  unsigned exposedAreaVec_ {stk::mesh::InvalidOrdinal};
 
   const double penaltyFac_;
   const bool shiftedGradOp_;

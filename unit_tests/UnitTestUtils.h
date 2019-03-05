@@ -65,7 +65,6 @@ std::array<double,9> random_linear_transformation(int dim, double scale,std::mt1
 
 const double tol = 1.e-10;
 
-#ifndef KOKKOS_HAVE_CUDA
 class Hex8Mesh : public ::testing::Test
 {
 protected:
@@ -83,14 +82,14 @@ protected:
       coordField(nullptr),
       exactLaplacian(0.0)
     { 
-      stk::mesh::put_field(*elemCentroidField, meta.universal_part(), spatialDimension, (double*)nullptr); 
+      stk::mesh::put_field_on_mesh(*elemCentroidField, meta.universal_part(), spatialDimension, (double*)nullptr); 
       double one = 1.0;
       double zero = 0.0;
-      stk::mesh::put_field(*nodalPressureField, meta.universal_part(), 1, &one);
-      stk::mesh::put_field(*discreteLaplacianOfPressure, meta.universal_part(), 1, &zero);
-      stk::mesh::put_field(*scalarQ, meta.universal_part(), 1, &zero);
-      stk::mesh::put_field(*diffFluxCoeff, meta.universal_part(), 1, &zero);
-      stk::mesh::put_field(*idField, meta.universal_part(), 1);
+      stk::mesh::put_field_on_mesh(*nodalPressureField, meta.universal_part(), 1, &one);
+      stk::mesh::put_field_on_mesh(*discreteLaplacianOfPressure, meta.universal_part(), 1, &zero);
+      stk::mesh::put_field_on_mesh(*scalarQ, meta.universal_part(), 1, &zero);
+      stk::mesh::put_field_on_mesh(*diffFluxCoeff, meta.universal_part(), 1, &zero);
+      stk::mesh::put_field_on_mesh(*idField, meta.universal_part(), 1, nullptr);
     }
 
     ~Hex8Mesh() {}
@@ -144,17 +143,19 @@ protected:
       dpdx(&meta.declare_field<VectorFieldType>(stk::topology::NODE_RANK, "dpdx", 3/*num-states*/)), 
       density(&meta.declare_field<ScalarFieldType>(stk::topology::NODE_RANK, "density", 3/*num-states*/)), 
       viscosity(&meta.declare_field<ScalarFieldType>(stk::topology::NODE_RANK, "viscosity")),
-      pressure(&meta.declare_field<ScalarFieldType>(stk::topology::NODE_RANK, "pressure"))
+      pressure(&meta.declare_field<ScalarFieldType>(stk::topology::NODE_RANK, "pressure")),
+      udiag(&meta.declare_field<ScalarFieldType>(stk::topology::NODE_RANK, "momentum_diag"))
     {
       double one = 1.0;
       sierra::nalu::HexSCS hex8SCS;
-      stk::mesh::put_field(*massFlowRate, meta.universal_part(), hex8SCS.numIntPoints_, &one);
-      stk::mesh::put_field(*Gju, meta.universal_part(), 3, &one);
-      stk::mesh::put_field(*velocity, meta.universal_part(), 3, &one);
-      stk::mesh::put_field(*dpdx, meta.universal_part(), 3, &one);
-      stk::mesh::put_field(*density, meta.universal_part(), 1, &one);
-      stk::mesh::put_field(*viscosity, meta.universal_part(), 1, &one);
-      stk::mesh::put_field(*pressure, meta.universal_part(), 1, &one);
+      stk::mesh::put_field_on_mesh(*massFlowRate, meta.universal_part(), hex8SCS.numIntPoints_, &one);
+      stk::mesh::put_field_on_mesh(*Gju, meta.universal_part(), 3, &one);
+      stk::mesh::put_field_on_mesh(*velocity, meta.universal_part(), 3, &one);
+      stk::mesh::put_field_on_mesh(*dpdx, meta.universal_part(), 3, &one);
+      stk::mesh::put_field_on_mesh(*density, meta.universal_part(), 1, &one);
+      stk::mesh::put_field_on_mesh(*viscosity, meta.universal_part(), 1, &one);
+      stk::mesh::put_field_on_mesh(*pressure, meta.universal_part(), 1, &one);
+      stk::mesh::put_field_on_mesh(*udiag, meta.universal_part(), 1, &one);
     }
 
     GenericFieldType* massFlowRate;
@@ -164,6 +165,7 @@ protected:
     ScalarFieldType* density;
     ScalarFieldType* viscosity;
     ScalarFieldType* pressure;
+    ScalarFieldType* udiag;
 };
 
 class Hex8ElementWithBCFields : public ::testing::Test
@@ -194,25 +196,25 @@ class Hex8ElementWithBCFields : public ::testing::Test
     const double oneVecNine[9] = {one, one, one, one, one, one, one, one, one};
     const double oneVecTwelve[12] = {one, one, one, one, one, one, one, one, one, one, one, one};
     
-    stk::mesh::put_field(velocity, meta.universal_part(), 3, oneVecThree);
-    stk::mesh::put_field(bcVelocity, meta.universal_part(), 3, oneVecThree);
-    stk::mesh::put_field(density, meta.universal_part(), 1);
-    stk::mesh::put_field(viscosity, meta.universal_part(), 1, &one);
-    stk::mesh::put_field(bcHeatFlux, meta.universal_part(), 1);
-    stk::mesh::put_field(specificHeat, meta.universal_part(), 1);    
+    stk::mesh::put_field_on_mesh(velocity, meta.universal_part(), 3, oneVecThree);
+    stk::mesh::put_field_on_mesh(bcVelocity, meta.universal_part(), 3, oneVecThree);
+    stk::mesh::put_field_on_mesh(density, meta.universal_part(), 1, nullptr);
+    stk::mesh::put_field_on_mesh(viscosity, meta.universal_part(), 1, &one);
+    stk::mesh::put_field_on_mesh(bcHeatFlux, meta.universal_part(), 1, nullptr);
+    stk::mesh::put_field_on_mesh(specificHeat, meta.universal_part(), 1, nullptr);    
     
     const sierra::nalu::MasterElement* meFC = sierra::nalu::MasterElementRepo::get_surface_master_element(stk::topology::QUAD_4);
-    stk::mesh::put_field(exposedAreaVec, meta.universal_part(), 3*meFC->numIntPoints_, oneVecTwelve);
-    stk::mesh::put_field(wallFrictionVelocityBip, meta.universal_part(), meFC->numIntPoints_);
-    stk::mesh::put_field(wallNormalDistanceBip, meta.universal_part(), meFC->numIntPoints_);
+    stk::mesh::put_field_on_mesh(exposedAreaVec, meta.universal_part(), 3*meFC->numIntPoints_, oneVecTwelve);
+    stk::mesh::put_field_on_mesh(wallFrictionVelocityBip, meta.universal_part(), meFC->numIntPoints_, nullptr);
+    stk::mesh::put_field_on_mesh(wallNormalDistanceBip, meta.universal_part(), meFC->numIntPoints_, nullptr);
     
-    stk::mesh::put_field(bcVelocityOpen, meta.universal_part(), 3, oneVecThree);
-    stk::mesh::put_field(openMdot, meta.universal_part(), 4, oneVecFour);
-    stk::mesh::put_field(Gjui, meta.universal_part(), 3*3, oneVecNine);
+    stk::mesh::put_field_on_mesh(bcVelocityOpen, meta.universal_part(), 3, oneVecThree);
+    stk::mesh::put_field_on_mesh(openMdot, meta.universal_part(), 4, oneVecFour);
+    stk::mesh::put_field_on_mesh(Gjui, meta.universal_part(), 3*3, oneVecNine);
     
-    stk::mesh::put_field(scalarQ, meta.universal_part(), 1, &one);    
-    stk::mesh::put_field(bcScalarQ, meta.universal_part(), 1, &one);    
-    stk::mesh::put_field(Gjq, meta.universal_part(), 3, oneVecThree);    
+    stk::mesh::put_field_on_mesh(scalarQ, meta.universal_part(), 1, &one);    
+    stk::mesh::put_field_on_mesh(bcScalarQ, meta.universal_part(), 1, &one);    
+    stk::mesh::put_field_on_mesh(Gjq, meta.universal_part(), 3, oneVecThree);    
     
     unit_test_utils::create_one_reference_element(bulk, stk::topology::HEXAHEDRON_8);
    }
@@ -302,8 +304,6 @@ class ABLWallFunctionHex8ElementWithBCFields : public Hex8ElementWithBCFields
   double ypSpec_;
 
 };  
-
-#endif
 
 #endif
 

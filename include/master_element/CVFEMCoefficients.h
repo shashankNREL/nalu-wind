@@ -11,7 +11,7 @@
 #include <element_promotion/LagrangeBasis.h>
 #include <CVFEMTypeDefs.h>
 
-#include <stk_util/environment/ReportHandler.hpp>
+#include <stk_util/util/ReportHandler.hpp>
 
 namespace sierra {
 namespace nalu {
@@ -19,7 +19,7 @@ namespace coefficients {
 /* Computes 1D coefficient matrices (e.g. for the derivative) for CVFEM */
 
 template <int p, typename Scalar = DoubleType>
-nodal_matrix_view<p, Scalar> nodal_integration_weights(const double* nodeLocs, const double* scsLocs)
+nodal_matrix_view<p, Scalar> nodal_integration_weights(const double* /* nodeLocs */, const double* scsLocs)
 {
   constexpr int nodes1D = p+1;
   auto scsEndLoc = pad_end_points(p, scsLocs);

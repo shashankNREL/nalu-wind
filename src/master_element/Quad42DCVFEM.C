@@ -21,7 +21,7 @@
 #include <NaluEnv.h>
 #include <FORTRAN_Proto.h>
 
-#include <stk_util/environment/ReportHandler.hpp>
+#include <stk_util/util/ReportHandler.hpp>
 #include <stk_topology/topology.hpp>
 
 #include <iostream>
@@ -39,7 +39,7 @@ namespace nalu{
 void quad_derivative(const std::vector<double> &par_coord, 
                      SharedMemView<DoubleType***>& deriv) {
   const double half = 0.5;
-  const size_t npts = deriv.dimension(0);
+  const size_t npts = deriv.extent(0);
 
   for(size_t j=0; j<npts; ++j) {
     const DoubleType s1 = par_coord[2*j+0];
@@ -107,7 +107,7 @@ void quad_gradient_operator(const SharedMemView<DoubleType***>& deriv,
 Quad42DSCV::Quad42DSCV()
   : MasterElement()
 {
-  nDim_ = 2;
+  ndim(AlgTraits::nDim_);
   nodesPerElement_ = 4;
   numIntPoints_ = 4;
 
@@ -233,7 +233,7 @@ void Quad42DSCV::grad_op(
   SharedMemView<DoubleType***>& deriv) {
 
   quad_derivative(intgLoc_, deriv);
-  quad_gradient_operator<Traits::numScsIp_, Traits::nodesPerElement_>(deriv, coords, gradop);
+  quad_gradient_operator<AlgTraits::numScsIp_, AlgTraits::nodesPerElement_>(deriv, coords, gradop);
 }
 
 void Quad42DSCV::determinant(
@@ -258,7 +258,7 @@ void Quad42DSCV::shifted_grad_op(
   SharedMemView<DoubleType***>& deriv) {
 
   quad_derivative(intgLocShift_, deriv);
-  quad_gradient_operator<Traits::numScsIp_, Traits::nodesPerElement_>(deriv, coords, gradop);
+  quad_gradient_operator<AlgTraits::numScsIp_, AlgTraits::nodesPerElement_>(deriv, coords, gradop);
 }
 
 //--------------------------------------------------------------------------
@@ -301,12 +301,38 @@ Quad42DSCV::quad_shape_fcn(
 }
 
 //--------------------------------------------------------------------------
+//-------- Metric Tensor Mij------------------------------------------------
+//--------------------------------------------------------------------------
+// This function computes the metric tensor Mij = (J J^T)^(1/2) where J is
+// the Jacobian.  This is needed for the UT-A Hybrid LES model.  For
+// reference please consult the Nalu theory manual description of the UT-A
+// Hybrid LES model or S. Haering's PhD thesis: Anisotropic hybrid turbulence 
+// modeling with specific application to the simulation of pulse-actuated 
+// dynamic stall control.
+//--------------------------------------------------------------------------
+void Quad42DSCV::Mij(
+  const double *coords,
+  double *metric,
+  double *deriv)
+{
+  generic_Mij_2d<AlgTraitsQuad4_2D>(numIntPoints_, deriv, coords, metric);
+}
+//-------------------------------------------------------------------------
+void Quad42DSCV::Mij(
+  SharedMemView<DoubleType**>& coords,
+  SharedMemView<DoubleType***>& metric,
+  SharedMemView<DoubleType***>& deriv)
+{
+  generic_Mij_2d<AlgTraitsQuad4_2D>(deriv, coords, metric);
+}
+
+//--------------------------------------------------------------------------
 //-------- constructor -----------------------------------------------------
 //--------------------------------------------------------------------------
 Quad42DSCS::Quad42DSCS()
   : MasterElement()
 {
-  nDim_ = 2;
+  ndim(AlgTraits::nDim_);
   nodesPerElement_ = 4;
   numIntPoints_ = 4;
   scaleToStandardIsoFac_ = 2.0;
@@ -385,13 +411,6 @@ Quad42DSCS::Quad42DSCS()
   // face 3;
   ipNodeMap_[6] = 3;  ipNodeMap_[7] = 0; 
 
-  sideNodeOrdinals_ = {
-      0, 1,
-      1, 2,
-      2, 3,
-      3, 0
-  };
-
   std::vector<std::vector<double>> nodeLocations =
   {
       {-0.5,-0.5}, {+0.5,-0.5},
@@ -439,7 +458,7 @@ Quad42DSCS::side_node_ordinals(
   int ordinal)
 {
   // define face_ordinal->node_ordinal mappings for each face (ordinal);
-  return &sideNodeOrdinals_[ordinal*2];
+  return sideNodeOrdinals_[ordinal];
 }
 
 //--------------------------------------------------------------------------
@@ -530,7 +549,7 @@ void Quad42DSCS::grad_op(
   SharedMemView<DoubleType***>& deriv) {
 
   quad_derivative(intgLoc_, deriv);
-  quad_gradient_operator<Traits::numScsIp_, Traits::nodesPerElement_>(deriv, coords, gradop);
+  quad_gradient_operator<AlgTraits::numScsIp_, AlgTraits::nodesPerElement_>(deriv, coords, gradop);
 }
 
 void Quad42DSCS::grad_op(
@@ -565,7 +584,7 @@ void Quad42DSCS::shifted_grad_op(
   SharedMemView<DoubleType***>& gradop,
   SharedMemView<DoubleType***>& deriv) {
   quad_derivative(intgLocShift_, deriv);
-  quad_gradient_operator<Traits::numScsIp_, Traits::nodesPerElement_>(deriv, coords, gradop);
+  quad_gradient_operator<AlgTraits::numScsIp_, AlgTraits::nodesPerElement_>(deriv, coords, gradop);
 }
 
 void Quad42DSCS::shifted_grad_op(
@@ -768,6 +787,32 @@ void Quad42DSCS::gij(
       &numIntPoints_,
       deriv,
       coords, gupperij, glowerij);
+}
+
+//--------------------------------------------------------------------------
+//-------- Metric Tensor Mij------------------------------------------------
+//--------------------------------------------------------------------------
+// This function computes the metric tensor Mij = (J J^T)^(1/2) where J is
+// the Jacobian.  This is needed for the UT-A Hybrid LES model.  For
+// reference please consult the Nalu theory manual description of the UT-A
+// Hybrid LES model or S. Haering's PhD thesis: Anisotropic hybrid turbulence 
+// modeling with specific application to the simulation of pulse-actuated 
+// dynamic stall control.
+//--------------------------------------------------------------------------
+void Quad42DSCS::Mij(
+  const double *coords,
+  double *metric,
+  double *deriv)
+{
+  generic_Mij_2d<AlgTraitsQuad4_2D>(numIntPoints_, deriv, coords, metric);
+}
+//-------------------------------------------------------------------------
+void Quad42DSCS::Mij(
+  SharedMemView<DoubleType**>& coords,
+  SharedMemView<DoubleType***>& metric,
+  SharedMemView<DoubleType***>& deriv)
+{
+  generic_Mij_2d<AlgTraitsQuad4_2D>(deriv, coords, metric);
 }
 
 //--------------------------------------------------------------------------
@@ -1008,7 +1053,7 @@ Quad42DSCS::general_shape_fcn(
 //--------------------------------------------------------------------------
 void 
 Quad42DSCS::general_face_grad_op(
-  const int face_ordinal,
+  const int  /* face_ordinal */,
   const double *isoParCoord,
   const double *coords,
   double *gradop,

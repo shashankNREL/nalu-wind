@@ -40,7 +40,9 @@ enum AlgorithmType{
    *
    * \sa FixPressureAtNodeAlgorithm
    */
-  REF_PRESSURE = 15
+  REF_PRESSURE = 15, 
+ 
+  TOP_ABL = 16
 };
 
 enum BoundaryConditionType{
@@ -50,7 +52,8 @@ enum BoundaryConditionType{
   SYMMETRY_BC  = 4,
   PERIODIC_BC  = 5,
   NON_CONFORMAL_BC = 6,
-  OVERSET_BC = 7
+  OVERSET_BC = 7,
+  ABLTOP_BC  = 8
 };
 
 enum EquationType {
@@ -70,6 +73,7 @@ enum EquationType {
   EQ_PNG_H = 13,
   EQ_PNG_U = 14,
   EQ_PNG_TKE = 15, // FIXME... Last PNG managed like this..
+  EQ_WALL_DISTANCE = 16,
   EquationSystemType_END
 };
 
@@ -89,7 +93,8 @@ static const std::string EquationTypeMap[] = {
   "PNG_Z",
   "PNG_H",
   "PNG_U",
-  "PNG_TKE"
+  "PNG_TKE",
+  "Wall_Distance"
 };
 
 enum UserDataType {
@@ -222,10 +227,15 @@ static const std::string TurbulenceModelConstantNames[] = {
 enum ActuatorType {
   ActLinePointDrag = 0,
   ActLineFAST = 1,
+  ActDiskFAST = 2,
   ActuatorType_END
 };
 
- static std::map<std::string, ActuatorType> ActuatorTypeMap = { {"ActLinePointDrag",ActuatorType::ActLinePointDrag}, {"ActLineFAST",ActuatorType::ActLineFAST}};
+ static std::map<std::string, ActuatorType> ActuatorTypeMap = {
+     {"ActLinePointDrag",ActuatorType::ActLinePointDrag},
+     {"ActLineFAST",ActuatorType::ActLineFAST},
+     {"ActDiskFAST",ActuatorType::ActDiskFAST}
+ };
 
 } // namespace nalu
 } // namespace Sierra

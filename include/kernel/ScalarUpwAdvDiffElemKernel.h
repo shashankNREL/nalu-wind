@@ -47,6 +47,7 @@ public:
   /** Execute the kernel within a Kokkos loop and populate the LHS and RHS for
    *  the linear solve
    */
+  using Kernel::execute;
   virtual void execute(
     SharedMemView<DoubleType**>&,
     SharedMemView<DoubleType*>&,
@@ -61,13 +62,13 @@ private:
 
   const SolutionOptions& solnOpts_;
 
-  ScalarFieldType *scalarQ_{nullptr};
-  VectorFieldType *Gjq_{nullptr};
-  ScalarFieldType *diffFluxCoeff_{nullptr};
-  VectorFieldType *velocityRTM_{nullptr};
-  ScalarFieldType *density_{nullptr};
-  VectorFieldType *coordinates_{nullptr};
-  GenericFieldType *massFlowRate_{nullptr};
+  unsigned scalarQ_ {stk::mesh::InvalidOrdinal};
+  unsigned Gjq_ {stk::mesh::InvalidOrdinal};
+  unsigned diffFluxCoeff_ {stk::mesh::InvalidOrdinal};
+  unsigned velocityRTM_ {stk::mesh::InvalidOrdinal};
+  unsigned density_ {stk::mesh::InvalidOrdinal};
+  unsigned coordinates_ {stk::mesh::InvalidOrdinal};
+  unsigned massFlowRate_ {stk::mesh::InvalidOrdinal};
 
   /// Left right node indicators
   const int* lrscv_;

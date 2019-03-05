@@ -40,6 +40,7 @@ public:
   /** Execute the kernel within a Kokkos loop and populate the LHS and RHS for
    *  the linear solve
    */
+  using Kernel::execute;
   virtual void execute(
     SharedMemView<DoubleType**>&,
     SharedMemView<DoubleType*>&,
@@ -48,9 +49,9 @@ public:
 private:
   MomentumActuatorSrcElemKernel() = delete;
 
-  VectorFieldType *actuator_source_{nullptr};
-  VectorFieldType *actuator_source_lhs_{nullptr};
-  VectorFieldType *coordinates_{nullptr};
+  unsigned actuator_source_     {stk::mesh::InvalidOrdinal};
+  unsigned actuator_source_lhs_ {stk::mesh::InvalidOrdinal};
+  unsigned coordinates_         {stk::mesh::InvalidOrdinal};
 
   const int* ipNodeMap_;
 

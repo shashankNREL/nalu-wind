@@ -14,7 +14,6 @@
 #include <KokkosInterface.h>
 
 #include <Kokkos_DefaultNode.hpp>
-#include <Kokkos_UnorderedMap.hpp>
 #include <Tpetra_Vector.hpp>
 #include <Tpetra_CrsMatrix.hpp>
 
@@ -26,7 +25,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace nalu_stk {
+namespace stk {
 class CommNeighbors;
 }
 
@@ -127,7 +126,7 @@ public:
   void writeToFile(const char * filename, bool useOwned=true);
   void printInfo(bool useOwned=true);
   void writeSolutionToFile(const char * filename, bool useOwned=true);
-  size_t lookup_myLID(MyLIDMapType& myLIDs, stk::mesh::EntityId entityId, const char* msg=nullptr, stk::mesh::Entity entity = stk::mesh::Entity())
+  size_t lookup_myLID(MyLIDMapType& myLIDs, stk::mesh::EntityId entityId, const char* /* msg */ =nullptr, stk::mesh::Entity /* entity */ = stk::mesh::Entity())
   {
     return myLIDs[entityId];
   }
@@ -144,18 +143,18 @@ private:
 
   void beginLinearSystemConstruction();
 
-  void checkError( const int err_code, const char * msg) {}
+  void checkError( const int /* err_code */, const char * /* msg */) {}
 
   void compute_send_lengths(const std::vector<stk::mesh::Entity>& rowEntities,
          const std::vector<std::vector<stk::mesh::Entity> >& connections,
                             const std::vector<int>& neighborProcs,
-                            nalu_stk::CommNeighbors& commNeighbors);
+                            stk::CommNeighbors& commNeighbors);
 
   void compute_graph_row_lengths(const std::vector<stk::mesh::Entity>& rowEntities,
          const std::vector<std::vector<stk::mesh::Entity> >& connections,
                                  LinSys::RowLengths& sharedNotOwnedRowLengths,
                                  LinSys::RowLengths& locallyOwnedRowLengths,
-                                 nalu_stk::CommNeighbors& commNeighbors);
+                                 stk::CommNeighbors& commNeighbors);
 
   void insert_graph_connections(const std::vector<stk::mesh::Entity>& rowEntities,
          const std::vector<std::vector<stk::mesh::Entity> >& connections,
@@ -184,6 +183,7 @@ private:
   std::vector<std::vector<stk::mesh::Entity> > connections_;
   std::vector<GlobalOrdinal> totalGids_;
   std::set<std::pair<int,GlobalOrdinal> > ownersAndGids_;
+  std::vector<int> sharedPids_;
 
   Teuchos::RCP<LinSys::Node>   node_;
 

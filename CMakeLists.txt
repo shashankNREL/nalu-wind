@@ -1,22 +1,26 @@
 ############################ BASE ######################################
-cmake_minimum_required (VERSION 3.1)
+cmake_minimum_required (VERSION 3.10.0)
 project(Nalu CXX C Fortran)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 ########################## OPTIONS #####################################
+option(ENABLE_CUDA "Enable build targeting GPU" OFF)
 option(ENABLE_TESTS "Enable regression testing." OFF)
 option(ENABLE_DOCUMENTATION "Build documentation." OFF)
 option(ENABLE_SPHINX_API_DOCS "Link Doxygen API docs to Sphinx" OFF)
+option(ENABLE_WIND_UTILS "Build wind utils along with Nalu-Wind" OFF)
+option(ENABLE_FFTW "Use the FFTW library to support ABLTopBC" OFF)
+option(ENABLE_HYPRE "Use HYPRE Solver library" OFF)
 option(ENABLE_OPENFAST
        "Use OPENFAST tpl to get actuator line positions and forces" OFF)
 option(ENABLE_PARAVIEW_CATALYST
       "Enable ParaView Catalyst. Requires external installation of Trilinos Catalyst IOSS adapter."
        OFF)
 option(ENABLE_TIOGA "Use TIOGA TPL to perform overset connectivity" OFF)
-option(ENABLE_HYPRE "Use HYPRE Solver library" OFF)
-option(ENABLE_WARNINGS "Add -Wall to show compiler warnings" ON)
-option(ENABLE_EXTRA_WARNINGS "Add -Wextra to show even more compiler warnings" OFF)
+option(ENABLE_ALL_WARNINGS "Show most warnings for most compilers" ON)
+option(ENABLE_WERROR "Warnings are errors" OFF)
+option(ENABLE_OPENMP "Enable OpenMP flags" ON)
 
 set(CMAKE_CXX_STANDARD 11)       # Set nalu-wind C++11 standard
 set(CMAKE_CXX_EXTENSIONS OFF)    # Do not enable GNU extensions
@@ -27,7 +31,9 @@ include_directories(SYSTEM ${MPI_C_INCLUDE_PATH})
 include_directories(SYSTEM ${MPI_CXX_INCLUDE_PATH})
 include_directories(SYSTEM ${MPI_Fortran_INCLUDE_PATH})
 
-find_package(OpenMP)
+if(ENABLE_OPENMP)
+  find_package(OpenMP)
+endif()
 
 ########################## TRILINOS ####################################
 set(CMAKE_PREFIX_PATH ${Trilinos_DIR} ${CMAKE_PREFIX_PATH})
@@ -46,9 +52,6 @@ if(Trilinos_BUILD_SHARED_LIBS)
 else(Trilinos_BUILD_SHARED_LIBS)
   set(Nalu_LIBRARY_TYPE STATIC)
 endif(Trilinos_BUILD_SHARED_LIBS)
-
-# Set Nalu's compilers, CMAKE_FIND_LIBRARY_PREFIXES
-# and CMAKE_FIND_LIBRARY_SUFFIXES, etc, after inheriting settings from Trilinos
 
 ############################ YAML ######################################
 set(CMAKE_PREFIX_PATH ${YAML_DIR} ${CMAKE_PREFIX_PATH})
@@ -71,10 +74,24 @@ else()
   message(FATAL_ERROR "YAML-CPP NOT FOUND")
 endif()
 
+if(ENABLE_CUDA)
+    add_definitions(-DUSE_STK_SIMD_NONE)
+endif()
+
+############################ FFTW ######################################
+if(ENABLE_FFTW)
+  set(CMAKE_PREFIX_PATH ${FFTW_DIR} ${CMAKE_PREFIX_PATH})
+  find_package(FFTW QUIET REQUIRED)
+  if(FFTW_FOUND)
+    message("-- Found FFTW = ${FFTW_DIR}")
+  endif()
+  include_directories(${FFTW_INCLUDE_DIRS})
+  add_definitions("-DNALU_USES_FFTW")
+endif(ENABLE_FFTW)
+
 ############################ HYPRE #####################################
 if(ENABLE_HYPRE)
   set(CMAKE_PREFIX_PATH ${HYPRE_DIR} ${CMAKE_PREFIX_PATH})
-  # Quiet down HYPRE's own "found" output to be consistent with others
   find_package(HYPRE QUIET REQUIRED)
   if(HYPRE_FOUND)
     message("-- Found HYPRE = ${HYPRE_DIR}")
@@ -123,16 +140,32 @@ elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
   set(EXTRA_Fortran_FLAGS "")
 endif()
 
-if(ENABLE_WARNINGS)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
-  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Wall")
+# Logic for showing and handling warnings
+if(ENABLE_ALL_WARNINGS)
+  # GCC, Clang, and Intel seem to accept these
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic")
+    if (NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+      # ifort doesn't like -Wall
+      set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Wall")
+    else()
+      # Intel always reports some diagnostics we don't necessarily care about
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -diag-disable:11074,11076")
+    endif()
+    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 7.0)
+      # Avoid notes about -faligned-new with GCC > 7
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -faligned-new")
+    endif()
 endif()
-if(ENABLE_EXTRA_WARNINGS)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra -pedantic")
-  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Wextra -pedantic")
+# Make warnings errors
+if(ENABLE_WERROR)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
+  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Werror")
 endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${EXTRA_CXX_FLAGS}")
+if (ENABLE_CUDA)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Trilinos_CXX_COMPILER_FLAGS}")
+endif()
 set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${EXTRA_Fortran_FLAGS}")
 
 if (OPENMP_FOUND)
@@ -146,11 +179,19 @@ message("-- CMAKE_Fortran_FLAGS = ${CMAKE_Fortran_FLAGS}")
 if(ENABLE_HYPRE)
   include(CheckSymbolExists)
   set(CMAKE_REQUIRED_INCLUDES "${HYPRE_INCLUDE_DIRS}")
+  set(CMAKE_REQUIRED_LIBRARIES "${HYPRE_LIBRARIES}")
   check_symbol_exists(
     HYPRE_BIGINT "${HYPRE_INCLUDE_DIRS}/HYPRE_config.h" NALU_HYPRE_BIGINT)
+  check_symbol_exists(
+    hypre_KRYLOV_COGMRES_HEADER "${HYPRE_INCLUDE_DIRS}/krylov.h" NALU_HYPRE_COGMRES)
   if(NOT NALU_HYPRE_BIGINT)
     message(WARNING
       "HYPRE does not enable 64-bit integer support; will fail on large problems!")
+  endif()
+  if (NALU_HYPRE_COGMRES)
+    add_definitions(-DHYPRE_COGMRES)
+  else()
+    message("-- Disabling HYPRE CO-GMRES interface")
   endif()
 endif()
 
@@ -211,16 +252,20 @@ target_link_libraries(nalu ${Trilinos_LIBRARIES})
 target_link_libraries(nalu ${YAML_CPP_LIBRARIES})
 target_link_libraries(nalu ${MPI_CXX_LIBRARIES} ${MPI_Fortran_LIBRARIES} ${MPI_C_LIBRARIES})
 
+if(ENABLE_FFTW)
+  target_link_libraries(nalu ${FFTW_LIBRARIES})
+endif()
+
+if(ENABLE_HYPRE)
+  target_link_libraries(nalu ${HYPRE_LIBRARIES})
+endif()
+
 if(ENABLE_OPENFAST)
   target_link_libraries(nalu ${OpenFAST_LIBRARIES} ${OpenFAST_CPP_LIBRARIES})
 endif()
 
 if(ENABLE_TIOGA)
   target_link_libraries(nalu ${TIOGA_LIBRARIES})
-endif()
-
-if(ENABLE_HYPRE)
-  target_link_libraries(nalu ${HYPRE_LIBRARIES})
 endif()
 
 message("-- CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}")
@@ -280,3 +325,19 @@ if(ENABLE_TESTS)
    include(CTest)
    add_subdirectory(reg_tests)
 endif()
+
+if (ENABLE_WIND_UTILS)
+  if (EXISTS ${CMAKE_SOURCE_DIR}/wind-utils/CMakeLists.txt)
+    add_subdirectory(wind-utils)
+  else()
+    message(WARNING
+      "ENABLE_WIND_UTILS is ON, but wind-utils submodule has not been initialized.\
+       You should execute 'git submodule init && git submodule update' \
+       or use '-DENABLE_WIND_UTILS=OFF' to turn off this warning. \
+       DISABLING wind-utils compilation.
+      ")
+  endif()
+endif()
+
+# Note if you are interested in using Xcode for development,
+# refer to instructions in https://github.com/Exawind/nalu-wind/pull/22

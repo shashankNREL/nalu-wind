@@ -45,6 +45,7 @@ public:
   /** Execute the kernel within a Kokkos loop and populate the LHS and RHS for
    *  the linear solve
    */
+  using Kernel::execute;
   virtual void execute(
     SharedMemView<DoubleType**>&,
     SharedMemView<DoubleType*>&,
@@ -53,10 +54,10 @@ public:
 private:
   ContinuityMassElemKernel() = delete;
 
-  ScalarFieldType *densityNm1_{nullptr};
-  ScalarFieldType *densityN_{nullptr};
-  ScalarFieldType *densityNp1_{nullptr};
-  VectorFieldType *coordinates_{nullptr};
+  unsigned densityNm1_ {stk::mesh::InvalidOrdinal};
+  unsigned densityN_ {stk::mesh::InvalidOrdinal};
+  unsigned densityNp1_ {stk::mesh::InvalidOrdinal};
+  unsigned coordinates_ {stk::mesh::InvalidOrdinal};
 
   double dt_{0.0};
   double gamma1_{0.0};

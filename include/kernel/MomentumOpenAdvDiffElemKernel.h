@@ -51,6 +51,7 @@ public:
   /** Execute the kernel within a Kokkos loop and populate the LHS and RHS for
    *  the linear solve
    */
+  using Kernel::execute;
   virtual void execute(
     SharedMemView<DoubleType**> &lhs,
     SharedMemView<DoubleType*> &rhs,
@@ -61,15 +62,15 @@ public:
 private:
   MomentumOpenAdvDiffElemKernel() = delete;
 
-  ScalarFieldType *viscosity_{nullptr};
-  GenericFieldType *Gjui_{nullptr};
-  VectorFieldType *velocityNp1_{nullptr};
-  VectorFieldType *velocityRTM_{nullptr};
-  VectorFieldType *coordinates_{nullptr};
-  ScalarFieldType *density_{nullptr};
-  GenericFieldType *exposedAreaVec_{nullptr};
-  GenericFieldType *openMassFlowRate_{nullptr};
-  VectorFieldType *velocityBc_{nullptr};
+  unsigned viscosity_ {stk::mesh::InvalidOrdinal};
+  unsigned Gjui_ {stk::mesh::InvalidOrdinal};
+  unsigned velocityNp1_ {stk::mesh::InvalidOrdinal};
+  unsigned velocityRTM_ {stk::mesh::InvalidOrdinal};
+  unsigned coordinates_ {stk::mesh::InvalidOrdinal};
+  unsigned density_ {stk::mesh::InvalidOrdinal};
+  unsigned exposedAreaVec_ {stk::mesh::InvalidOrdinal};
+  unsigned openMassFlowRate_ {stk::mesh::InvalidOrdinal};
+  unsigned velocityBc_ {stk::mesh::InvalidOrdinal};
   
   // numerical parameters
   const double alphaUpw_;

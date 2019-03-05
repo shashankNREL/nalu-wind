@@ -138,7 +138,7 @@ BdyLayerStatistics::setup()
   heightIndex_ = &meta.declare_field<ScalarIntFieldType>(
     stk::topology::NODE_RANK, "bdy_layer_height_index_field");
   for (auto* part: fluidParts_)
-    stk::mesh::put_field(*heightIndex_, *part);
+    stk::mesh::put_field_on_mesh(*heightIndex_, *part, nullptr);
 }
 
 void
@@ -222,6 +222,14 @@ void
 BdyLayerStatistics::temperature(double height, double* theta)
 {
     interpolate_variable(1, thetaAvg_, height, theta);
+}
+
+int
+BdyLayerStatistics::abl_height_index(const double height) const
+{
+  auto idx = utils::find_index(heights_, height);
+
+  return idx.second;
 }
 
 void

@@ -30,7 +30,13 @@ namespace nalu{
 class Quad42DSCV : public MasterElement
 {
 public:
-  using Traits = AlgTraitsQuad4_2D;
+  using AlgTraits = AlgTraitsQuad4_2D;
+  using MasterElement::determinant;
+  using MasterElement::grad_op;
+  using MasterElement::shifted_grad_op;
+  using MasterElement::shape_fcn;
+  using MasterElement::shifted_shape_fcn;
+
   Quad42DSCV();
   virtual ~Quad42DSCV();
 
@@ -50,11 +56,21 @@ public:
     SharedMemView<DoubleType***>& gradop,
     SharedMemView<DoubleType***>& deriv) override ;
 
+  void Mij(
+    SharedMemView<DoubleType** >& coords,
+    SharedMemView<DoubleType***>& metric,
+    SharedMemView<DoubleType***>& deriv) override ;
+
   void determinant(
     const int nelem,
     const double *coords,
     double *areav,
     double * error ) override ;
+
+  void Mij(
+     const double *coords,
+     double *metric,
+     double *deriv) override ;
 
   void shape_fcn(
     double *shpfc) override ;
@@ -72,7 +88,11 @@ public:
 class Quad42DSCS : public MasterElement
 {
 public:
-  using Traits = AlgTraitsQuad4_2D;
+  using AlgTraits = AlgTraitsQuad4_2D;
+  using MasterElement::determinant;
+  using MasterElement::shape_fcn;
+  using MasterElement::shifted_shape_fcn;
+
   Quad42DSCS();
   virtual ~Quad42DSCS();
 
@@ -152,6 +172,16 @@ public:
      double *gij,
      double *deriv) override ;
 
+  void Mij(
+    SharedMemView<DoubleType** >& coords,
+    SharedMemView<DoubleType***>& metric,
+    SharedMemView<DoubleType***>& deriv) override ;
+
+  void Mij(
+     const double *coords,
+     double *metric,
+     double *deriv) override ;
+
   const int * adjacentNodes() override;
 
   const int * scsIpEdgeOrd() override;
@@ -204,7 +234,15 @@ public:
     double *elem_pcoords) override;
 
   const int* side_node_ordinals(int sideOrdinal) final;
+
 private :
+  const int sideNodeOrdinals_[4][2] = {
+      {0, 1},
+      {1, 2},
+      {2, 3},
+      {3, 0} 
+  };
+
   void face_grad_op(
     const int face_ordinal,
     const bool shifted,

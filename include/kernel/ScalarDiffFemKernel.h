@@ -43,6 +43,7 @@ public:
   /** Execute the kernel within a Kokkos loop and populate the LHS and RHS for
    *  the linear solve
    */
+  using Kernel::execute;
   virtual void execute(
     SharedMemView<DoubleType**>&,
     SharedMemView<DoubleType*>&,
@@ -52,9 +53,9 @@ private:
   ScalarDiffFemKernel() = delete;
 
   const stk::mesh::BulkData* bulkData_;
-  ScalarFieldType *scalarQ_{nullptr};
-  ScalarFieldType *diffFluxCoeff_{nullptr};
-  VectorFieldType *coordinates_{nullptr};
+  unsigned scalarQ_{stk::mesh::InvalidOrdinal};
+  unsigned diffFluxCoeff_{stk::mesh::InvalidOrdinal};
+  unsigned coordinates_{stk::mesh::InvalidOrdinal};
 
   // master element
   Hex8FEM * meFEM_;

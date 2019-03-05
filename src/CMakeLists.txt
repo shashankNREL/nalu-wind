@@ -1,6 +1,7 @@
 add_sources(GlobalSourceList
    ABLProfileFunction.C
    ActuatorLinePointDrag.C
+   Actuator.C
    Algorithm.C
    AlgorithmDriver.C
    AssembleContinuityEdgeOpenSolverAlgorithm.C
@@ -28,6 +29,7 @@ add_sources(GlobalSourceList
    AssembleMomentumNonConformalSolverAlgorithm.C
    AssembleNodalGradAlgorithmDriver.C
    AssembleNodalGradBoundaryAlgorithm.C
+   AssembleNodalGradPOpenBoundaryAlgorithm.C
    AssembleNodalGradEdgeAlgorithm.C
    AssembleNodalGradElemAlgorithm.C
    AssembleNodalGradNonConformalAlgorithm.C
@@ -88,7 +90,6 @@ add_sources(GlobalSourceList
    DirichletBC.C
    EffectiveDiffFluxCoeffAlgorithm.C
    EffectiveSSTDiffFluxCoeffAlgorithm.C
-   EigenDecomposition.C
    ElemDataRequests.C
    EnthalpyABLSrcNodeSuppAlg.C
    EnthalpyEffectiveDiffFluxCoeffAlgorithm.C
@@ -117,7 +118,6 @@ add_sources(GlobalSourceList
    MassFractionEquationSystem.C
    MaterialProperty.C
    MaterialPropertys.C
-   MeshMotionInfo.C
    MixtureFractionEquationSystem.C
    MomentumABLForceSrcNodeSuppAlg.C
    MomentumActuatorSrcNodeSuppAlg.C
@@ -132,7 +132,6 @@ add_sources(GlobalSourceList
    MomentumMassBackwardEulerNodeSuppAlg.C
    MomentumMassElemSuppAlgDep.C
    MovingAveragePostProcessor.C
-   NaluCommNeighbors.C
    NaluEnv.C
    NaluParsing.C
    NonConformalInfo.C
@@ -178,20 +177,33 @@ add_sources(GlobalSourceList
    TurbViscSmagorinskyAlgorithm.C
    TurbViscWaleAlgorithm.C
    TurbulenceAveragingPostProcessing.C
-   UnitTests.C
+   AssembleWallDistEdgeSolverAlgorithm.C
+   AssembleWallDistNonConformalAlgorithm.C
+   WallDistEquationSystem.C
+   WallDistSrcNodeSuppAlg.C
 )
+
+if(ENABLE_FFTW)
+   add_sources(GlobalSourceList
+      AssembleMomentumEdgeABLTopBC.C
+   )
+endif()
 
 if(ENABLE_OPENFAST)
    add_sources(GlobalSourceList
+      ActuatorFAST.C
       ActuatorLineFAST.C
+      ActuatorDiskFAST.C
    )
 endif()
 
 if(ENABLE_HYPRE)
    add_sources(GlobalSourceList
       HypreDirectSolver.C
+      HypreUVWSolver.C
       HypreLinearSolverConfig.C
       HypreLinearSystem.C
+      HypreUVWLinearSystem.C
    )
 endif()
 
@@ -210,6 +222,7 @@ add_subdirectory(overset)
 add_subdirectory(pmr)
 add_subdirectory(property_evaluator)
 add_subdirectory(tabular_props)
+add_subdirectory(utils)
 add_subdirectory(user_functions)
 add_subdirectory(xfer)
 add_subdirectory(wind_energy)

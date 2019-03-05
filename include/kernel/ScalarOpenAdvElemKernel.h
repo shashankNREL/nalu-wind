@@ -52,6 +52,7 @@ public:
   /** Execute the kernel within a Kokkos loop and populate the LHS and RHS for
    *  the linear solve
    */
+  using Kernel::execute;
   virtual void execute(
     SharedMemView<DoubleType**> &lhs,
     SharedMemView<DoubleType*> &rhs,
@@ -62,14 +63,14 @@ public:
 private:
   ScalarOpenAdvElemKernel() = delete;
 
-  ScalarFieldType *scalarQ_{nullptr};
-  ScalarFieldType *bcScalarQ_{nullptr};
-  VectorFieldType *Gjq_{nullptr};
-  ScalarFieldType *diffFluxCoeff_{nullptr};
-  VectorFieldType *velocityRTM_{nullptr};
-  VectorFieldType *coordinates_{nullptr};
-  ScalarFieldType *density_{nullptr};
-  GenericFieldType *openMassFlowRate_{nullptr};
+  unsigned scalarQ_ {stk::mesh::InvalidOrdinal};
+  unsigned bcScalarQ_ {stk::mesh::InvalidOrdinal};
+  unsigned Gjq_ {stk::mesh::InvalidOrdinal};
+  unsigned diffFluxCoeff_ {stk::mesh::InvalidOrdinal};
+  unsigned velocityRTM_ {stk::mesh::InvalidOrdinal};
+  unsigned coordinates_ {stk::mesh::InvalidOrdinal};
+  unsigned density_ {stk::mesh::InvalidOrdinal};
+  unsigned openMassFlowRate_ {stk::mesh::InvalidOrdinal};
   
   // numerical parameters
   const double alphaUpw_;

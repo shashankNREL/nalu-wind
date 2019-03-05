@@ -44,6 +44,7 @@ public:
   /** Execute the kernel within a Kokkos loop and populate the LHS and RHS for
    *  the linear solve
    */
+  using Kernel::execute;
   virtual void execute(
     SharedMemView<DoubleType **>&lhs,
     SharedMemView<DoubleType *>&rhs,
@@ -52,9 +53,9 @@ public:
 private:
   ContinuityInflowElemKernel() = delete;
 
-  VectorFieldType *velocityBC_{nullptr};
-  ScalarFieldType *densityBC_{nullptr};
-  GenericFieldType *exposedAreaVec_{nullptr};
+  unsigned velocityBC_ {stk::mesh::InvalidOrdinal};
+  unsigned densityBC_ {stk::mesh::InvalidOrdinal};
+  unsigned exposedAreaVec_ {stk::mesh::InvalidOrdinal};
 
   const bool useShifted_;
   double projTimeScale_;

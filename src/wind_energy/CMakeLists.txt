@@ -4,4 +4,5 @@ add_sources(GlobalSourceList
   BdyLayerStatistics.C
   BdyLayerVelocitySampler.C
   BdyLayerTemperatureSampler.C
+  SyntheticLidar.C
   )

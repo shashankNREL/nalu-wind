@@ -14,9 +14,9 @@ namespace {
     const double* oldValues)
   {
     int counter = 0;
-    for(size_t i=0; i<values.dimension(0); ++i) {
-      for(size_t j=0; j<values.dimension(1); ++j) {
-        for(size_t k=0; k<values.dimension(2); ++k) {
+    for(size_t i=0; i<values.extent(0); ++i) {
+      for(size_t j=0; j<values.extent(1); ++j) {
+        for(size_t k=0; k<values.extent(2); ++k) {
           EXPECT_NEAR(stk::simd::get_data(values(i,j,k),0), oldValues[counter++], tol)<<"i:"<<i<<", j:"<<j<<", k:"<<k;
         }
       }
@@ -42,7 +42,7 @@ void compare_old_face_grad_op(
   const sierra::nalu::SharedMemView<DoubleType***>& scs_fc_dndx,
   sierra::nalu::MasterElement* meSCS)
 {
-  int len = scs_fc_dndx.dimension(0)*scs_fc_dndx.dimension(1)*scs_fc_dndx.dimension(2);
+  int len = scs_fc_dndx.extent(0)*scs_fc_dndx.extent(1)*scs_fc_dndx.extent(2);
   std::vector<double> coords;
   copy_DoubleType0_to_double(v_coords, coords);
   std::vector<double> grad_op(len, 0.0);
@@ -66,11 +66,12 @@ void test_MEBC_views(int faceOrdinal, const std::vector<sierra::nalu::ELEM_DATA_
 
   // Register ME data requests
   for(sierra::nalu::ELEM_DATA_NEEDED request : elem_requests) {
-    driver.elemDataNeeded_.add_master_element_call(request, sierra::nalu::CURRENT_COORDINATES);
+    driver.elemDataNeeded().add_master_element_call(
+      request, sierra::nalu::CURRENT_COORDINATES);
   }
 
   // Execute the loop and perform all tests
-  driver.execute([&](sierra::nalu::SharedMemData_FaceElem& smdata) {
+  driver.execute([&](sierra::nalu::SharedMemData_FaceElem<sierra::nalu::TeamHandleType,sierra::nalu::HostShmem>& smdata) {
 
     sierra::nalu::SharedMemView<DoubleType**>& v_coords = smdata.simdElemViews.get_scratch_view_2D(*driver.coordinates_);
     auto& meViews = smdata.simdElemViews.get_me_views(sierra::nalu::CURRENT_COORDINATES);

@@ -98,6 +98,8 @@ public:
 
   SurfaceForceAndMomentAlgorithmDriver *surfaceForceAndMomentAlgDriver_;
 
+  std::vector<int> xyBCType_;
+
   bool isInit_;
 
 };
@@ -148,6 +150,11 @@ public:
     const stk::topology &partTopo,
     const SymmetryBoundaryConditionData &symmetryBCData);
 
+  virtual void register_abltop_bc(
+    stk::mesh::Part *part,
+    const stk::topology &partTopo,
+    const ABLTopBoundaryConditionData &ablTopBCData);
+
   virtual void register_non_conformal_bc(
     stk::mesh::Part *part,
     const stk::topology &theTopo);
@@ -164,7 +171,22 @@ public:
   virtual void manage_projected_nodal_gradient(
      EquationSystems& eqSystems);
    virtual void compute_projected_nodal_gradient();
- 
+
+  virtual void save_diagonal_term(
+    const std::vector<stk::mesh::Entity>&,
+    const std::vector<int>&,
+    const std::vector<double>&
+  );
+
+  virtual void save_diagonal_term(
+    unsigned,
+    const stk::mesh::Entity*,
+    const SharedMemView<const double**>&
+  );
+
+  virtual void assemble_and_solve(
+    stk::mesh::FieldBase *deltaSolution);
+
   const bool managePNG_;
 
   VectorFieldType *velocity_;
@@ -176,6 +198,7 @@ public:
   ScalarFieldType *visc_;
   ScalarFieldType *tvisc_;
   ScalarFieldType *evisc_;
+  ScalarFieldType* Udiag_{nullptr};
   
   AssembleNodalGradUAlgorithmDriver *assembleNodalGradAlgDriver_;
   AlgorithmDriver *diffFluxCoeffAlgDriver_;
@@ -232,6 +255,11 @@ public:
     stk::mesh::Part *part,
     const stk::topology &theTopo,
     const SymmetryBoundaryConditionData &symmetryBCData);
+
+  virtual void register_abltop_bc(
+    stk::mesh::Part *part,
+    const stk::topology &partTopo,
+    const ABLTopBoundaryConditionData &ablTopBCData);
 
   virtual void register_non_conformal_bc(
     stk::mesh::Part *part,

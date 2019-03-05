@@ -41,6 +41,7 @@ public:
   /** Execute the kernel within a Kokkos loop and populate the LHS and RHS for
    *  the linear solve
    */
+  using Kernel::execute;
   virtual void execute(
     SharedMemView<DoubleType**>&,
     SharedMemView<DoubleType*>&,
@@ -49,10 +50,10 @@ public:
 private:
   MomentumAdvDiffElemKernel() = delete;
 
-  VectorFieldType *velocityNp1_{nullptr};
-  VectorFieldType *coordinates_{nullptr};
-  ScalarFieldType *viscosity_{nullptr};
-  GenericFieldType *massFlowRate_{nullptr};
+  unsigned velocityNp1_  {stk::mesh::InvalidOrdinal};
+  unsigned coordinates_  {stk::mesh::InvalidOrdinal};
+  unsigned viscosity_    {stk::mesh::InvalidOrdinal};
+  unsigned massFlowRate_ {stk::mesh::InvalidOrdinal};
 
   const int* lrscv_;
 

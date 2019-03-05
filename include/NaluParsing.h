@@ -310,12 +310,24 @@ struct OversetUserData : public UserData {
 };
 
 struct SymmetryUserData : public UserData {
+  SymmetryUserData()
+    : UserData()
+  {}
+};
+
+struct ABLTopUserData : public UserData {
   NormalTemperatureGradient normalTemperatureGradient_;
+
+  bool ABLTopBC_{false};
+  std::vector<int> grid_dims_;
+  std::vector<int> horiz_bcs_;
+  double z_sample_;
 
   bool normalTemperatureGradientSpec_;
 
-  SymmetryUserData()
+  ABLTopUserData()
     : UserData(),
+      z_sample_(-999.0),
       normalTemperatureGradientSpec_(false)
   {}
 };
@@ -376,6 +388,11 @@ struct SymmetryBoundaryConditionData : public BoundaryCondition {
   SymmetryUserData userData_;
 };
 
+struct ABLTopBoundaryConditionData : public BoundaryCondition {
+  ABLTopBoundaryConditionData(BoundaryConditions& bcs) : BoundaryCondition(bcs){};
+  ABLTopUserData userData_;
+};
+
 struct PeriodicBoundaryConditionData : public BoundaryCondition {
   PeriodicBoundaryConditionData(BoundaryConditions& bcs) : BoundaryCondition(bcs){};
   MasterSlave masterSlave_;
@@ -397,6 +414,7 @@ struct BoundaryConditionOptions{
   OversetBoundaryConditionData oversetbc_;
   NonConformalBoundaryConditionData nonConformalbc_;
   SymmetryBoundaryConditionData symmetrybc_;
+  ABLTopBoundaryConditionData abltopbc_;
   PeriodicBoundaryConditionData periodicbc_;
 };
 
@@ -486,6 +504,8 @@ void operator >> (const YAML::Node& node, OpenBoundaryConditionData& rhs) ;
 void operator >> (const YAML::Node& node, OversetBoundaryConditionData& rhs) ;
 
 void operator >> (const YAML::Node& node, SymmetryBoundaryConditionData& rhs) ;
+
+void operator >> (const YAML::Node& node, ABLTopBoundaryConditionData& rhs) ;
 
 void operator >> (const YAML::Node& node, PeriodicBoundaryConditionData& rhs) ;
 
@@ -607,6 +627,10 @@ template<> struct convert<sierra::nalu::OversetUserData> {
 
 template<> struct convert<sierra::nalu::SymmetryUserData> {
   static bool decode(const Node& node, sierra::nalu::SymmetryUserData& rhs) ;
+};
+
+template<> struct convert<sierra::nalu::ABLTopUserData> {
+  static bool decode(const Node& node, sierra::nalu::ABLTopUserData& rhs) ;
 };
 
 template<> struct convert<sierra::nalu::PeriodicUserData> {

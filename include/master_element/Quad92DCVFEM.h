@@ -31,6 +31,10 @@ namespace nalu{
 class Quad92DSCV : public QuadrilateralP2Element
 {
 public:
+  using MasterElement::determinant;
+  using MasterElement::grad_op;
+  using MasterElement::shifted_grad_op;
+
   Quad92DSCV();
   virtual ~Quad92DSCV() {}
 
@@ -50,11 +54,21 @@ public:
     SharedMemView<DoubleType***>& gradop,
     SharedMemView<DoubleType***>& deriv) override ;
 
+  void Mij(
+    SharedMemView<DoubleType** >& coords,
+    SharedMemView<DoubleType***>& metric,
+    SharedMemView<DoubleType***>& deriv) override ;
+
   void determinant(
     const int nelem,
     const double *coords,
     double *areav,
     double * error ) override ;
+
+  void Mij(
+    const double *coords,
+    double *metric,
+    double *deriv) override ;
 
 private:
   void set_interior_info();
@@ -74,6 +88,8 @@ private:
 class Quad92DSCS : public QuadrilateralP2Element
 {
 public:
+  using MasterElement::determinant;
+
   Quad92DSCS();
   virtual ~Quad92DSCS() {}
 
@@ -139,6 +155,16 @@ public:
     double *glowerij,
     double *deriv) override ;
 
+  void Mij(
+    SharedMemView<DoubleType** >& coords,
+    SharedMemView<DoubleType***>& metric,
+    SharedMemView<DoubleType***>& deriv) override ;
+
+  void Mij(
+    const double *coords,
+    double *metric,
+    double *deriv) override ;
+
   const int * adjacentNodes() override ;
 
   const int * ipNodeMap(int ordinal = 0) override ;
@@ -150,7 +176,6 @@ public:
     const int ordinal, const int node) override ;
 
   const int* side_node_ordinals(int sideOrdinal) final;
-
 
 private:
   void set_interior_info();

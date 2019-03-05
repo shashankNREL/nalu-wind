@@ -11,7 +11,7 @@
 #include <stk_util/parallel/Parallel.hpp>
 #include <Kokkos_Core.hpp>
 
-#include <ElemDataRequests.h>
+#include <ElemDataRequestsNGP.h>
 #include <ScratchViews.h>
 
 #include "UnitTestKokkosUtils.h"
@@ -75,17 +75,17 @@ public:
     SharedMemView<double*>& elemVectorView = elemData.get_scratch_view_1D(*elemVectorField);
     SharedMemView<double**>& elemTensorView = elemData.get_scratch_view_2D(*elemTensorField);
 
-    EXPECT_EQ(nodesPerElem, nodalScalarView.dimension(0));
-    EXPECT_EQ(nodesPerElem, nodalVectorView.dimension(0));
-    EXPECT_EQ(4u,           nodalVectorView.dimension(1));
-    EXPECT_EQ(nodesPerElem, nodalTensorView.dimension(0));
-    EXPECT_EQ(3u,           nodalTensorView.dimension(1));
-    EXPECT_EQ(3u,           nodalTensorView.dimension(2));
+    EXPECT_EQ(nodesPerElem, nodalScalarView.extent(0));
+    EXPECT_EQ(nodesPerElem, nodalVectorView.extent(0));
+    EXPECT_EQ(4u,           nodalVectorView.extent(1));
+    EXPECT_EQ(nodesPerElem, nodalTensorView.extent(0));
+    EXPECT_EQ(3u,           nodalTensorView.extent(1));
+    EXPECT_EQ(3u,           nodalTensorView.extent(2));
 
-    EXPECT_EQ(1u, elemScalarView.dimension(0));
-    EXPECT_EQ(8u, elemVectorView.dimension(0));
-    EXPECT_EQ(2u, elemTensorView.dimension(0));
-    EXPECT_EQ(2u, elemTensorView.dimension(1));
+    EXPECT_EQ(1u, elemScalarView.extent(0));
+    EXPECT_EQ(8u, elemVectorView.extent(0));
+    EXPECT_EQ(2u, elemTensorView.extent(0));
+    EXPECT_EQ(2u, elemTensorView.extent(1));
   }
 
 private:
@@ -103,7 +103,9 @@ class TestAlgorithm
 {
 public:
   TestAlgorithm(stk::mesh::BulkData& bulk)
-  : suppAlgs_(), bulkData_(bulk)
+  : suppAlgs_(),
+    dataNeededByKernels_(bulk.mesh_meta_data()),
+    bulkData_(bulk)
   {}
 
   void execute()
@@ -116,22 +118,23 @@ public:
       //a topology would be available.
       dataNeededByKernels_.add_cvfem_surface_me(sierra::nalu::MasterElementRepo::get_surface_master_element(stk::topology::HEX_8));
 
+      sierra::nalu::ElemDataRequestsNGP dataNeededNGP(dataNeededByKernels_, meta.get_fields().size());
       const int bytes_per_team = 0;
-      const int bytes_per_thread = get_num_bytes_pre_req_data(dataNeededByKernels_, meta.spatial_dimension());
+      const int bytes_per_thread = sierra::nalu::get_num_bytes_pre_req_data<double>(dataNeededNGP, meta.spatial_dimension());
       auto team_exec = sierra::nalu::get_host_team_policy(elemBuckets.size(), bytes_per_team, bytes_per_thread);
       Kokkos::parallel_for(team_exec, [&](const sierra::nalu::TeamHandleType& team)
       {
           const stk::mesh::Bucket& bkt = *elemBuckets[team.league_rank()];
           stk::topology topo = bkt.topology();
 
-          sierra::nalu::ScratchViews<double> prereqData(team, bulkData_, topo.num_nodes(), dataNeededByKernels_);
+          sierra::nalu::ScratchViews<double> prereqData(team, meta.spatial_dimension(), topo.num_nodes(), dataNeededNGP);
 
           // See get_num_bytes_pre_req_data for padding
           EXPECT_EQ(static_cast<unsigned>(bytes_per_thread), prereqData.total_bytes() + 8 * sizeof(double));
 
           Kokkos::parallel_for(Kokkos::TeamThreadRange(team, bkt.size()), [&](const size_t& jj)
           {
-             fill_pre_req_data(dataNeededByKernels_, bulkData_, bkt[jj], prereqData);
+             fill_pre_req_data(dataNeededNGP, bulkData_, bkt[jj], prereqData);
             
              for(SuppAlg* alg : suppAlgs_) {
                alg->elem_execute(topo, prereqData);
@@ -159,13 +162,13 @@ TEST_F(Hex8Mesh, supp_alg_data_sharing)
 
     const stk::mesh::Part& wholemesh = meta.universal_part();
 
-    stk::mesh::put_field(nodalScalarField, wholemesh);
-    stk::mesh::put_field(nodalVectorField, wholemesh, 4);
-    stk::mesh::put_field(nodalTensorField, wholemesh, 3, 3);
+    stk::mesh::put_field_on_mesh(nodalScalarField, wholemesh, nullptr);
+    stk::mesh::put_field_on_mesh(nodalVectorField, wholemesh, 4, nullptr);
+    stk::mesh::put_field_on_mesh(nodalTensorField, wholemesh, 3, 3, nullptr);
 
-    stk::mesh::put_field(elemScalarField, wholemesh);
-    stk::mesh::put_field(elemVectorField, wholemesh, 8);
-    stk::mesh::put_field(elemTensorField, wholemesh, 2, 2);
+    stk::mesh::put_field_on_mesh(elemScalarField, wholemesh, nullptr);
+    stk::mesh::put_field_on_mesh(elemVectorField, wholemesh, 8, nullptr);
+    stk::mesh::put_field_on_mesh(elemTensorField, wholemesh, 2, 2, nullptr);
 
     fill_mesh("generated:10x10x10");
 
@@ -194,15 +197,15 @@ TEST_F(Hex8Mesh, inconsistent_field_requests)
 
     const stk::mesh::Part& wholemesh = meta.universal_part();
 
-    stk::mesh::put_field(nodalScalarField, wholemesh);
-    stk::mesh::put_field(nodalTensorField, wholemesh, 3, 3);
+    stk::mesh::put_field_on_mesh(nodalScalarField, wholemesh, nullptr);
+    stk::mesh::put_field_on_mesh(nodalTensorField, wholemesh, 3, 3, nullptr);
 
-    stk::mesh::put_field(elemScalarField, wholemesh);
-    stk::mesh::put_field(elemTensorField, wholemesh, 2, 2);
+    stk::mesh::put_field_on_mesh(elemScalarField, wholemesh, nullptr);
+    stk::mesh::put_field_on_mesh(elemTensorField, wholemesh, 2, 2, nullptr);
 
     fill_mesh("generated:10x10x10");
 
-    sierra::nalu::ElemDataRequests prereqData;
+    sierra::nalu::ElemDataRequests prereqData(meta);
 
     prereqData.add_gathered_nodal_field(nodalScalarField, 1);
     EXPECT_THROW(prereqData.add_gathered_nodal_field(nodalScalarField, 2), std::logic_error);

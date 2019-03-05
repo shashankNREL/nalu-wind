@@ -2,7 +2,9 @@ add_sources(GlobalUnitSourceList
    UnitTest1ElemCoordCheck.C
    UnitTestABLWallFunction.C
    UnitTestBasicKokkos.C
+   UnitTestCopyAndInterleave.C
    UnitTestCreateOnDevice.C
+   UnitTestEigenDecomposition.C
    UnitTestElemDataRequests.C
    UnitTestElemSuppAlg.C
    UnitTestElementDescription.C
@@ -12,6 +14,7 @@ add_sources(GlobalUnitSourceList
    UnitTestHex27FaceNodeOrdering.C
    UnitTestHexElementPromotion.C
    UnitTestHexMasterElements.C
+   UnitTestHexMasterElementsNgp.C
    UnitTestHexSCVDeterminant.C
    UnitTestIntegrationRule.C
    UnitTestKokkosME.C
@@ -20,11 +23,14 @@ add_sources(GlobalUnitSourceList
    UnitTestLocalGraphArrays.C
    UnitTestMasterElements.C
    UnitTestMetricTensor.C
+   UnitTestMijTensor.C
    UnitTestMovingAverage.C
    UnitTestNGPMasterElements.C
+   UnitTestNgpMesh1.C
    UnitTestPecletFunction.C
    UnitTestQuadElementPromotion.C
    UnitTestRealm.C
+   UnitTestScratchViews.C
    UnitTestShmemAlignment.C
    UnitTestSideIsInElement.C
    UnitTestSideNodeOrdinals.C
@@ -33,6 +39,7 @@ add_sources(GlobalUnitSourceList
    UnitTestSimdContAdvElem.C
    UnitTestSimdMomentum.C
    UnitTestSingleHexPromotion.C
+   UnitTestSpinnerLidarPattern.C
    UnitTestSuppAlgDataSharing.C
    UnitTestTpetra.C
    UnitTestUtils.C
@@ -51,6 +58,14 @@ add_sources(GlobalUnitHeaderList
    UnitTestViewUtils.h
 )
 
+if(ENABLE_OPENFAST)
+   add_sources(GlobalUnitSourceList
+      UnitTestActuatorDiskFAST.C
+   )
+endif()
+
 add_subdirectory(algorithms)
 add_subdirectory(kernels)
 add_subdirectory(ho_kernels)
+add_subdirectory(mesh_motion)
+add_subdirectory(utils)

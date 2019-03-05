@@ -15,6 +15,9 @@
 #include <element_promotion/HexNElementDescription.h>
 #include <element_promotion/QuadNElementDescription.h>
 
+#include <AlgTraits.h>
+#include <KokkosInterface.h>
+
 #include <vector>
 #include <array>
 
@@ -35,6 +38,10 @@ class TensorProductQuadratureRule;
 class HigherOrderHexSCV final: public MasterElement
 {
 public:
+  using MasterElement::determinant;
+  using MasterElement::grad_op;
+  using MasterElement::shape_fcn;
+
   HigherOrderHexSCV(
     ElementDescription elem,
     LagrangeBasis basis,
@@ -92,6 +99,12 @@ private:
 class HigherOrderHexSCS final: public MasterElement
 {
 public:
+  using MasterElement::determinant;
+  using MasterElement::grad_op;
+  using MasterElement::shape_fcn;
+  using MasterElement::gij;
+  using MasterElement::face_grad_op;
+
   HigherOrderHexSCS(
     ElementDescription elem,
     LagrangeBasis basis,
@@ -159,6 +172,10 @@ public:
     return shapeDerivs_;
   }
 
+  void face_grad_op(
+    int face_ordinal,
+    SharedMemView<DoubleType**>& coords,
+    SharedMemView<DoubleType***>& gradop) final;
 
 private:
   void set_interior_info();
@@ -174,17 +191,23 @@ private:
   LagrangeBasis basis_;
   const TensorProductQuadratureRule quadrature_;
 
+  std::vector<int> sideNodeOrdinals_;
   std::vector<double> shapeFunctionVals_;
   std::vector<double> shapeDerivs_;
   std::vector<double> expFaceShapeDerivs_;
   std::vector<ContourData> ipInfo_;
   int ipsPerFace_;
+
+  AlignedViewType<DoubleType**[3]> expRefGradWeights_;
 };
 
 // 3D Quad 9
 class HigherOrderQuad3DSCS final: public MasterElement
 {
 public:
+  using MasterElement::determinant;
+  using MasterElement::shape_fcn;
+
   HigherOrderQuad3DSCS(
     ElementDescription elem,
     LagrangeBasis basis,
@@ -237,6 +260,10 @@ private:
 class HigherOrderQuad2DSCV final: public MasterElement
 {
 public:
+  using MasterElement::determinant;
+  using MasterElement::shape_fcn;
+  using MasterElement::grad_op;
+
   HigherOrderQuad2DSCV(
     ElementDescription elem,
     LagrangeBasis basis,
@@ -291,6 +318,12 @@ private:
 class HigherOrderQuad2DSCS final: public MasterElement
 {
 public:
+  using MasterElement::determinant;
+  using MasterElement::shape_fcn;
+  using MasterElement::grad_op;
+  using MasterElement::face_grad_op;
+  using MasterElement::gij;
+
   HigherOrderQuad2DSCS(
     ElementDescription elem,
     LagrangeBasis basis,
@@ -349,6 +382,8 @@ public:
     const int ordinal, const int node) final;
 
   const int * side_node_ordinals(int ordinal = 0) final;
+  virtual const std::vector<int>& side_node_ordinals() const final {return sideNodeOrdinals_;};
+  virtual void side_node_ordinals(const std::vector<int>& v) final {sideNodeOrdinals_=v;};
 
   std::vector<double> shape_functions() {
     return shapeFunctionVals_;
@@ -372,6 +407,7 @@ private:
   LagrangeBasis basis_;
   const TensorProductQuadratureRule quadrature_;
 
+  std::vector<int> sideNodeOrdinals_;
   std::vector<double> shapeFunctionVals_;
   std::vector<double> shapeDerivs_;
   std::vector<ContourData> ipInfo_;
@@ -382,6 +418,9 @@ private:
 class HigherOrderEdge2DSCS final: public MasterElement
 {
 public:
+  using MasterElement::determinant;
+  using MasterElement::shape_fcn;
+
   explicit HigherOrderEdge2DSCS(
     ElementDescription elem,
     LagrangeBasis basis,

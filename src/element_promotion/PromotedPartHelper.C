@@ -9,7 +9,7 @@
 
 #include <stk_mesh/base/MetaData.hpp>
 #include <stk_mesh/base/Part.hpp>
-#include <stk_util/environment/ReportHandler.hpp>
+#include <stk_util/util/ReportHandler.hpp>
 #include <stk_topology/topology.hpp>
 
 
@@ -88,7 +88,7 @@ namespace nalu{
     return (base_name + super_element_suffix());
   }
   //--------------------------------------------------------------------------
-  std::string super_subset_part_name(const std::string& base_name)
+  std::string super_subset_part_name(std::string base_name)
   {
     // subsetted part name.  Goes like "surfacese_super_superside_1"
     // Ioss doesn't recognize "superside" but does recognize the "super" tag
@@ -104,7 +104,7 @@ namespace nalu{
 
     return name;
   }
-  std::string super_subset_part_name(const std::string& base_name, int numElemNodes, int numSideNodes)
+  std::string super_subset_part_name(std::string base_name, int  /* numElemNodes */, int  /* numSideNodes */)
   {
     // subsetted part name.  Goes like "surfacese_super512_superside64_1"
     // Ioss doesn't recognize "superside" but does recognize the "super" tag
@@ -288,6 +288,11 @@ namespace nalu{
       numEntities += ib->size();
     }
     return numEntities;
+  }
+  //--------------------------------------------------------------------------
+  stk::topology get_promoted_elem_topo(int dim, int order)
+  {
+    return (stk::create_superelement_topology(static_cast<unsigned>(std::pow(order+1, dim))));
   }
 
 } // namespace nalu

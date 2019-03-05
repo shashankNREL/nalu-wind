@@ -39,6 +39,7 @@ public:
   /** Execute the kernel within a Kokkos loop and populate the LHS and RHS for
    *  the linear solve
    */
+  using Kernel::execute;
   virtual void execute(
     SharedMemView<DoubleType**>&,
     SharedMemView<DoubleType*>&,
@@ -47,12 +48,12 @@ public:
 private:
   TurbKineticEnergyKsgsDesignOrderSrcElemKernel() = delete;
   
-  VectorFieldType *coordinates_{nullptr};
-  VectorFieldType *velocityNp1_{nullptr};
-  ScalarFieldType *tkeNp1_{nullptr};
-  ScalarFieldType *densityNp1_{nullptr};
-  ScalarFieldType *tvisc_{nullptr};
-  ScalarFieldType *dualNodalVolume_{nullptr};
+  unsigned coordinates_ {stk::mesh::InvalidOrdinal};
+  unsigned velocityNp1_ {stk::mesh::InvalidOrdinal};
+  unsigned tkeNp1_ {stk::mesh::InvalidOrdinal};
+  unsigned densityNp1_ {stk::mesh::InvalidOrdinal};
+  unsigned tvisc_ {stk::mesh::InvalidOrdinal};
+  unsigned dualNodalVolume_ {stk::mesh::InvalidOrdinal};
 
   const double cEps_;
   const double tkeProdLimitRatio_;
