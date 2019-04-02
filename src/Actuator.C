@@ -14,6 +14,8 @@
 
 // master elements
 #include <master_element/MasterElement.h>
+#include <master_element/MasterElementFactory.h>
+
 
 // stk_mesh/base/fem
 #include <stk_mesh/base/BulkData.hpp>
@@ -384,7 +386,7 @@ Actuator::compute_volume(
   const stk::topology& elemTopo = bulkData.bucket(elem).topology();
   MasterElement* meSCV =
     sierra::nalu::MasterElementRepo::get_volume_master_element(elemTopo);
-  const int numScvIp = meSCV->numIntPoints_;
+  const int numScvIp = meSCV->num_integration_points();
 
   // compute scv for this element
   ws_scv_volume_.resize(numScvIp);

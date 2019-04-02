@@ -33,6 +33,7 @@
 #include <FieldTypeDef.h>
 #include <LinearSystem.h>
 #include <master_element/MasterElement.h>
+#include <master_element/MasterElementFactory.h>
 #include <MaterialPropertys.h>
 #include <NaluParsing.h>
 #include <NonConformalManager.h>
@@ -516,6 +517,10 @@ Realm::initialize()
 
   populate_boundary_data();
 
+  ScalarIntFieldType* iblank = metaData_->get_field<ScalarIntFieldType>(
+    stk::topology::NODE_RANK, "iblank");
+  stk::mesh::field_fill(1, *iblank);
+
   if ( has_mesh_deformation() || solutionOptions_->meshMotion_ )
     init_current_coordinates();
 
@@ -526,6 +531,9 @@ Realm::initialize()
     meshMotionAlg_->initialize( get_current_time() );
 
   compute_geometry();
+
+  if ( solutionOptions_->meshMotion_ )
+    meshMotionAlg_->post_compute_geometry();
 
   if ( hasNonConformal_ )
     initialize_non_conformal();
@@ -887,6 +895,7 @@ Realm::setup_nodal_fields()
   // loop over all material props targets and register nodal fields
   std::vector<std::string> targetNames = get_physics_target_names();
   equationSystems_.register_nodal_fields(targetNames);
+
 }
 
 //--------------------------------------------------------------------------
@@ -1881,7 +1890,10 @@ Realm::pre_timestep_work()
   if ( solutionOptions_->meshMotion_ ) {
 
     meshMotionAlg_->execute( get_current_time() );
+
     compute_geometry();
+
+    meshMotionAlg_->post_compute_geometry();
 
     // and non-conformal algorithm
     if ( hasNonConformal_ )
@@ -2781,6 +2793,10 @@ Realm::register_nodal_fields(
       stk::mesh::put_field_on_mesh(*divV, *part, nullptr);
     }
   }
+
+  ScalarIntFieldType& iblank = metaData_->declare_field<ScalarIntFieldType>(
+    stk::topology::NODE_RANK, "iblank");
+  stk::mesh::put_field_on_mesh(iblank, *part, nullptr);
 }
 
 //--------------------------------------------------------------------------
@@ -2829,7 +2845,7 @@ Realm::register_wall_bc(
 
   // register fields
   MasterElement *meFC = MasterElementRepo::get_surface_master_element(theTopo);
-  const int numScsIp = meFC->numIntPoints_;
+  const int numScsIp = meFC->num_integration_points();
 
   GenericFieldType *exposedAreaVec_
     = &(metaData_->declare_field<GenericFieldType>(static_cast<stk::topology::rank_t>(metaData_->side_rank()), "exposed_area_vector"));
@@ -2872,7 +2888,7 @@ Realm::register_inflow_bc(
 
   // register fields
   MasterElement *meFC = MasterElementRepo::get_surface_master_element(theTopo);
-  const int numScsIp = meFC->numIntPoints_;
+  const int numScsIp = meFC->num_integration_points();
 
   GenericFieldType *exposedAreaVec_
     = &(metaData_->declare_field<GenericFieldType>(static_cast<stk::topology::rank_t>(metaData_->side_rank()), "exposed_area_vector"));
@@ -2914,7 +2930,7 @@ Realm::register_open_bc(
 
   // register fields
   MasterElement *meFC = MasterElementRepo::get_surface_master_element(theTopo);
-  const int numScsIp = meFC->numIntPoints_;
+  const int numScsIp = meFC->num_integration_points();
 
   GenericFieldType *exposedAreaVec_
     = &(metaData_->declare_field<GenericFieldType>(static_cast<stk::topology::rank_t>(metaData_->side_rank()), "exposed_area_vector"));
@@ -2957,7 +2973,7 @@ Realm::register_symmetry_bc(
 
   // register fields
   MasterElement *meFC = MasterElementRepo::get_surface_master_element(theTopo);
-  const int numScsIp = meFC->numIntPoints_;
+  const int numScsIp = meFC->num_integration_points();
 
   GenericFieldType *exposedAreaVec_
     = &(metaData_->declare_field<GenericFieldType>(static_cast<stk::topology::rank_t>(metaData_->side_rank()), "exposed_area_vector"));
@@ -3062,7 +3078,7 @@ Realm::register_non_conformal_bc(
   
   // register fields
   MasterElement *meFC = MasterElementRepo::get_surface_master_element(theTopo);
-  const int numScsIp = meFC->numIntPoints_;
+  const int numScsIp = meFC->num_integration_points();
   
   // exposed area vector
   GenericFieldType *exposedAreaVec_
