@@ -14,6 +14,7 @@ add_sources(GlobalSourceList
    AssembleElemSolverAlgorithm.C
    AssembleElemSolverAlgorithmHO.C
    AssembleFaceElemSolverAlgorithm.C
+   AssembleFaceScalarFluxBCSolverAlgorithm.C
    AssembleHeatCondIrradWallSolverAlgorithm.C
    AssembleHeatCondWallSolverAlgorithm.C
    AssembleMomentumEdgeABLWallFunctionSolverAlgorithm.C

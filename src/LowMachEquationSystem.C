@@ -1919,6 +1919,10 @@ MomentumEquationSystem::register_wall_bc(
       ScalarFieldType *theHeatFluxBcField = &(meta_data.declare_field<ScalarFieldType>(stk::topology::NODE_RANK, "heat_flux_bc"));
       stk::mesh::put_field_on_mesh(*theHeatFluxBcField, *part, nullptr);
 
+      GenericFieldType *wallHeatFluxBip 
+        = &(meta_data.declare_field<GenericFieldType>(sideRank, "wall_heat_flux_bip"));
+      stk::mesh::put_field_on_mesh(*wallHeatFluxBip, *part, numScsBip, nullptr);
+
       NormalHeatFlux heatFlux = userData.q_;
       std::vector<double> userSpec(1);
       userSpec[0] = heatFlux.qn_;

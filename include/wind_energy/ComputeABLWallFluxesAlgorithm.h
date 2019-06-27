@@ -9,13 +9,13 @@
 #ifndef ComputeABLWallFluxesAlgorithm_h
 #define ComputeABLWallFluxesAlgorithm_h
 
-#include "Algorithm.h"
-#include "NaluParsing.h"
-#include "FieldTypeDef.h"
-#include "ABLProfileFunction.h"
+#include <Algorithm.h>
+#include <NaluParsing.h>
+#include <FieldTypeDef.h>
+#include <ABLProfileFunction.h>
 
 // stk
-#include "stk_mesh/base/Part.hpp"
+#include <stk_mesh/base/Part.hpp>
 
 #include <vector>
 #include <iostream>
@@ -90,6 +90,7 @@ public:
   VectorFieldType *coordinates_;
   GenericFieldType *exposedAreaVec_;
   GenericFieldType *wallFrictionVelocityBip_;
+  GenericFieldType *wallHeatFluxBip_;
   GenericFieldType *wallNormalDistanceBip_;
   ScalarFieldType *assembledWallNormalDistance_;
   ScalarFieldType *assembledWallArea_;

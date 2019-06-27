@@ -7,27 +7,28 @@
 
 
 // nalu
-#include "wind_energy/ComputeABLWallFluxesAlgorithm.h"
-#include "Algorithm.h"
+#include <wind_energy/ComputeABLWallFluxesAlgorithm.h>
+#include <Algorithm.h>
 
-#include "FieldTypeDef.h"
-#include "Realm.h"
-#include "master_element/MasterElement.h"
-#include "NaluEnv.h"
+#include <FieldTypeDef.h>
+#include <Realm.h>
+#include <master_element/MasterElement.h>
+#include <master_element/MasterElementFactory.h>
+#include <NaluEnv.h>
 
-#include "ABLProfileFunction.h"
-#include "wind_energy/BdyLayerStatistics.h"
-#include "utils/LinearInterpolation.h"
+#include <ABLProfileFunction.h>
+#include <wind_energy/BdyLayerStatistics.h>
+#include <utils/LinearInterpolation.h>
 
 // stk_mesh/base/fem/util
-#include "stk_mesh/base/BulkData.hpp"
-#include "stk_mesh/base/Field.hpp"
-#include "stk_mesh/base/FieldParallel.hpp"
-#include "stk_mesh/base/GetBuckets.hpp"
-#include "stk_mesh/base/GetEntities.hpp"
-#include "stk_mesh/base/MetaData.hpp"
-#include "stk_mesh/base/Part.hpp"
-#include "stk_util/parallel/ParallelReduce.hpp"
+#include <stk_mesh/base/BulkData.hpp>
+#include <stk_mesh/base/Field.hpp>
+#include <stk_mesh/base/FieldParallel.hpp>
+#include <stk_mesh/base/GetBuckets.hpp>
+#include <stk_mesh/base/GetEntities.hpp>
+#include <stk_mesh/base/MetaData.hpp>
+#include <stk_mesh/base/Part.hpp>
+#include <stk_util/parallel/ParallelReduce.hpp>
 
 // basic c++
 #include <cmath>
@@ -81,6 +82,7 @@ ComputeABLWallFluxesAlgorithm::ComputeABLWallFluxesAlgorithm(
   //viscosity_ = meta_data.get_field<ScalarFieldType>(stk::topology::NODE_RANK, "viscosity");
   exposedAreaVec_ = meta_data.get_field<GenericFieldType>(meta_data.side_rank(), "exposed_area_vector");
   wallFrictionVelocityBip_ = meta_data.get_field<GenericFieldType>(meta_data.side_rank(), "wall_friction_velocity_bip");
+  wallHeatFluxBip_ = meta_data.get_field<GenericFieldType>(meta_data.side_rank(), "wall_heat_flux_bip");
   wallNormalDistanceBip_ = meta_data.get_field<GenericFieldType>(meta_data.side_rank(), "wall_normal_distance_bip");
   assembledWallArea_ = meta_data.get_field<ScalarFieldType>(stk::topology::NODE_RANK, "assembled_wall_area_wf");
   assembledWallNormalDistance_ = meta_data.get_field<ScalarFieldType>(stk::topology::NODE_RANK, "assembled_wall_normal_distance");
@@ -218,7 +220,7 @@ ComputeABLWallFluxesAlgorithm::execute()
     // face master element
     MasterElement *meFC = sierra::nalu::MasterElementRepo::get_surface_master_element(b.topology());
     const int nodesPerFace = b.topology().num_nodes();
-    const int numScsBip = meFC->numIntPoints_;
+    const int numScsBip = meFC->num_integration_points();
 
     // mapping from ip to nodes for this ordinal; face perspective (use with face_node_relations)
     const int *faceIpNodeMap = meFC->ipNodeMap();
@@ -259,7 +261,7 @@ ComputeABLWallFluxesAlgorithm::execute()
       //======================================
       stk::mesh::Entity const * face_node_rels = bulk_data.begin_nodes(face);
       int num_face_nodes = bulk_data.num_nodes(face);
-      std::cout << "num_face
+
       // sanity check on num nodes
       ThrowAssert( num_face_nodes == nodesPerFace );
 
@@ -286,6 +288,7 @@ ComputeABLWallFluxesAlgorithm::execute()
       const double * areaVec = stk::mesh::field_data(*exposedAreaVec_, face);
       double *wallNormalDistanceBip = stk::mesh::field_data(*wallNormalDistanceBip_, face);
       double *wallFrictionVelocityBip = stk::mesh::field_data(*wallFrictionVelocityBip_, face);
+      double *wallHeatFluxBip = stk::mesh::field_data(*wallHeatFluxBip_, face);
 
       // extract the connected element to this exposed face; should be single in size!
       const stk::mesh::Entity* face_elem_rels = bulk_data.begin_elements(face);
@@ -414,7 +417,7 @@ ComputeABLWallFluxesAlgorithm::execute()
 	double TfluxBip = heatFluxBip / (rhoBip * CpBip);
         compute_utau(uTangential, ypBip, TfluxBip, p_ABLProfFun, wallFrictionVelocityBip[ip]);
         double tol = 1.0E-3;
-        compute_fluxes_given_surface_temperature(tol, uTangential, temperatureBip, currSurfaceTemperature, ypBip, p_ABLProfFun, wallFrictionVelocityBip[ip], TfluxBip);
+        compute_fluxes_given_surface_temperature(tol, uTangential, temperatureBip, currSurfaceTemperature, ypBip, p_ABLProfFun, wallFrictionVelocityBip[ip], wallHeatFluxBip[ip]);
         uTauAreaSumLocal[0] += wallFrictionVelocityBip[ip] * aMag ;
         uTauAreaSumLocal[1] += aMag ;
       }
