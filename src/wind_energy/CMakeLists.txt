@@ -4,4 +4,6 @@ add_sources(GlobalSourceList
   BdyLayerStatistics.C
   ComputeABLWallFluxesAlgorithm.C
   SyntheticLidar.C
+  BdyLayerVelocitySampler.C
+  BdyLayerTemperatureSampler.C
   )
