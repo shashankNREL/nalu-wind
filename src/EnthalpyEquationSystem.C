@@ -58,6 +58,7 @@
 #include <SolverAlgorithmDriver.h>
 #include <SolutionOptions.h>
 #include <wind_energy/ABLForcingAlgorithm.h>
+#include <wind_energy/BdyLayerTemperatureSampler.h>
 
 // template for kernels
 #include <AlgTraits.h>
@@ -813,9 +814,6 @@ EnthalpyEquationSystem::register_wall_bc(
 
     GenericFieldType *wallHeatFluxBip = meta_data.get_field<GenericFieldType>(sideRank, "wall_heat_flux_bip");
 
-
-
-
     ScalarFieldType *theBcField = &(meta_data.declare_field<ScalarFieldType>(stk::topology::NODE_RANK, "heat_flux_bc"));
     stk::mesh::put_field_on_mesh(*theBcField, *part, nullptr);
 
@@ -837,17 +835,31 @@ EnthalpyEquationSystem::register_wall_bc(
     std::map<AlgorithmType, SolverAlgorithm *>::iterator itsi =
       solverAlgDriver_->solverAlgMap_.find(algType);
     if ( itsi == solverAlgDriver_->solverAlgMap_.end() ) {
+
+      BdyLayerTemperatureSampler* TemperatureSampler = nullptr;
+
+        // Handle LES wall modeling approach
+        if (userData.lesSampleTemperatureModel_) {
+          TemperatureSampler = new BdyLayerTemperatureSampler(realm_, userData);
+          equationSystems_.preIterAlgDriver_.push_back(TemperatureSampler);
+
+          NaluEnv::self().naluOutputP0()
+            << "EnthalpyEQS:: Activated Temperature sampling from user-defined height for LES Wall model" << std::endl;
+        }
+      
       AssembleScalarFluxBCSolverAlgorithm *theAlg
         = new AssembleScalarFluxBCSolverAlgorithm(realm_, part, this,
                                                   theBcField, realm_.realmUsesEdges_);
+
+      if (userData.lesSampleTemperatureModel_) {
+        TemperatureSampler->set_wall_func_algorithm(theAlg);
+      }
+      
       solverAlgDriver_->solverAlgMap_[algType] = theAlg;
     }
     else {
       itsi->second->partVec_.push_back(part);
     }
-
-
-
 
 
   }

@@ -1971,6 +1971,17 @@ MomentumEquationSystem::register_wall_bc(
           theUtauAlg->useLESSamplingHeight_ = true;
           theUtauAlg->lesModelRefHeight_ = refHeight;
         }
+        if (userData.lesSampleTemperatureModel_) {
+          if (realm_.bdyLayerStats_ == nullptr)
+            throw std::runtime_error("MomentumEQS:: LES Sampling at different height requires boundary_layer_statistics turned on.");
+          for (int d=0; d < nDim; d++) {
+            refHeight += userData.TempOffsetVector_[d] * userData.TempOffsetVector_[d];
+          }
+          refHeight = std::sqrt(refHeight);
+          theUtauAlg->useLESSamplingHeight_ = true;
+          theUtauAlg->lesModelRefHeightTemp_ = refHeight;
+        }
+        
         wallFunctionParamsAlgDriver_->algMap_[wfAlgType] = theUtauAlg;
       }
       else {
