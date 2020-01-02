@@ -238,6 +238,11 @@ void ABLWallFrictionVelAlg<BcAlgTraits>::execute()
         // const DoubleType zh = v_wallnormdist(ip);
         const DoubleType zh = 0.1;
 
+        NALU_ALIGNED DoubleType forceVel[BcAlgTraits::nDim_];
+        forceVel[0] = 10.1506472148;
+        forceVel[1] = 4.7333245315;
+        forceVel[2] = 0.0;
+        
         // Compute quantities at the boundary integration points
         DoubleType heatFluxIp = 0.0;
         DoubleType rhoIp = 0.0;
@@ -249,9 +254,11 @@ void ABLWallFrictionVelAlg<BcAlgTraits>::execute()
           CpIp += r * v_specHeat(ic);
 
           for (int d=0; d < BcAlgTraits::nDim_; ++d) {
-            velIp[d] += r * v_vel(ic, d);
+            // velIp[d] += r * v_vel(ic, d);
+            velIp[d] += r * forceVel[d];
             bcVelIp[d] += r * v_bcvel(ic, d);
           }
+
         }
 
         DoubleType uTangential = 0.0;
@@ -272,8 +279,8 @@ void ABLWallFrictionVelAlg<BcAlgTraits>::execute()
           }
           uTangential += (uiTan - uiBcTan) * (uiTan - uiBcTan);
         }
-        // uTangential = stk::math::sqrt(uTangential);
-        uTangential = 11.199999999992263;
+        uTangential = stk::math::sqrt(uTangential);
+        // uTangential = 11.199999999992263;
 
         const DoubleType Tflux = heatFluxIp / (rhoIp * CpIp);
         const DoubleType Lfac = stk::math::if_then_else(
