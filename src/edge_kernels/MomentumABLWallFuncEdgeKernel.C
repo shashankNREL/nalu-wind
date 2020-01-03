@@ -126,23 +126,24 @@ MomentumABLWallFuncEdgeKernel<BcAlgTraits>::execute(
       DoubleType uiTan = 0.0;
       DoubleType uiBcTan = 0.0;
 
-      for (int j=0; j < BcAlgTraits::nDim_; ++j) {
-        DoubleType ninj = nx[i] * nx[j];
-        if (i == j) {
-          const DoubleType om_ninj = 1.0 - ninj;
-          uiTan += om_ninj * v_vel(nodeR, j);
-          uiBcTan += om_ninj * v_bcvel(nodeR, j);
+      // for (int j=0; j < BcAlgTraits::nDim_; ++j) {
+      //   DoubleType ninj = nx[i] * nx[j];
+      //   if (i == j) {
+      //     const DoubleType om_ninj = 1.0 - ninj;
+      //     uiTan += om_ninj * v_vel(nodeR, j);
+      //     uiBcTan += om_ninj * v_bcvel(nodeR, j);
 
-          lhs(rowR, rowR) += lambda * om_ninj;
-        } else {
-          const int colR = nodeR * BcAlgTraits::nDim_ + j;
-          uiTan -= ninj * v_vel(nodeR, j);
-          uiBcTan -= ninj * v_bcvel(nodeR, j);
+      //     lhs(rowR, rowR) += lambda * om_ninj;
+      //   } else {
+      //     const int colR = nodeR * BcAlgTraits::nDim_ + j;
+      //     uiTan -= ninj * v_vel(nodeR, j);
+      //     uiBcTan -= ninj * v_bcvel(nodeR, j);
 
-          lhs(rowR, colR) -= lambda * ninj;
-        }
-      }
-      rhs(rowR) -= lambda * (uiTan - uiBcTan);
+      //     lhs(rowR, colR) -= lambda * ninj;
+      //   }
+      // }
+      // rhs(rowR) -= lambda * (uiTan - uiBcTan);
+      rhs(rowR) -= rho*ustar*ustar*amag;
     }
   }
 }
