@@ -23,4 +23,5 @@ target_sources(nalu PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/WallDistNodeKernel.C
   ${CMAKE_CURRENT_SOURCE_DIR}/TKESSTBLTNodeKernel.C
   ${CMAKE_CURRENT_SOURCE_DIR}/BLTGammaNodeKernel.C
+  ${CMAKE_CURRENT_SOURCE_DIR}/BLTReThetaNodeKernel.C
   )
